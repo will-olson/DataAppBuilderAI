@@ -221,10 +221,14 @@ def main():
     # Print key highlights
     print("Predictive Marketing Insights Generated!")
     print("\nCustomer Segments:")
-    print(marketing_insights['segment_profiles'])
+    print(json.dumps(marketing_insights['segment_profiles'], indent=2))
     
     print("\nMarketing Strategy Highlights:")
-    print(marketing_insights['marketing_strategy'][:500] + "...")  # Print first 500 chars
+    print(marketing_insights['marketing_strategy'])
+
+    # Optional: Save full strategy to a text file
+    with open('marketing_strategy_full.txt', 'w') as f:
+        f.write(marketing_insights['marketing_strategy'])
 
 if __name__ == '__main__':
     main()
