@@ -1,0 +1,7 @@
+tqdm
+sqlalchemy
+flask
+flask-sqlalchemy
+flask-migrate
+faker
+python-dotenv

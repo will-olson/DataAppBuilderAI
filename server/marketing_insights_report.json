@@ -1,0 +1,175 @@
+{
+    "demographic_insights": {
+        "age_distribution": {
+            "mean": 41.656727272727274,
+            "median": 41.0,
+            "std": 13.772724989945845
+        },
+        "gender_breakdown": {
+            "female": 0.25545454545454543,
+            "non-binary": 0.253,
+            "prefer_not_to_say": 0.24645454545454545,
+            "male": 0.24509090909090908
+        },
+        "location_top_10": {
+            "Korea": 92,
+            "Congo": 89,
+            "Paraguay": 68,
+            "Kazakhstan": 63,
+            "Cyprus": 60,
+            "French Polynesia": 59,
+            "Ghana": 57,
+            "Slovakia (Slovak Republic)": 57,
+            "Trinidad and Tobago": 57,
+            "Turkmenistan": 56
+        },
+        "language_distribution": {
+            "bem": 0.007181818181818182,
+            "ht": 0.007090909090909091,
+            "eu": 0.007090909090909091,
+            "cy": 0.007,
+            "bo": 0.006727272727272728,
+            "the": 0.006636363636363636,
+            "pt": 0.006636363636363636,
+            "ff": 0.006636363636363636,
+            "mai": 0.006636363636363636,
+            "kok": 0.006636363636363636
+        }
+    },
+    "engagement_insights": {
+        "avg_visit_time": {
+            "mean": 30.627520909090908,
+            "median": 30.895,
+            "std": 17.020688974273074
+        },
+        "total_sessions_stats": {
+            "mean": 252.8959090909091,
+            "median": 254.0,
+            "max": 500
+        },
+        "session_frequency_stats": {
+            "mean": 4.863410909090909,
+            "median": 4.88
+        }
+    },
+    "revenue_insights": {
+        "plan_conversion": {
+            "plus": 0.3406363636363636,
+            "basic": 0.33036363636363636,
+            "premium": 0.329
+        },
+        "ltv_insights": {
+            "plan_ltv": {
+                "basic": {
+                    "mean": 495.8996175013759,
+                    "median": 491.0,
+                    "max": 999.23
+                },
+                "plus": {
+                    "mean": 499.46852148385375,
+                    "median": 497.16,
+                    "max": 999.87
+                },
+                "premium": {
+                    "mean": 490.73269687759046,
+                    "median": 483.44,
+                    "max": 999.84
+                }
+            },
+            "total_ltv": {
+                "mean": 495.41539909090903,
+                "median": 490.47,
+                "total": 5449569.39
+            },
+            "purchases_analysis": {
+                "avg_purchases": 10.037090909090908,
+                "median_purchases": 10.0,
+                "max_purchases": 20.0
+            }
+        }
+    },
+    "churn_prediction": {
+        "churn_risk_distribution": {
+            "Low": 0.20276202670568869,
+            "Very Low": 0.20267056886775198,
+            "Very High": 0.1996524602158405,
+            "Medium": 0.19855496616059998,
+            "High": 0.1963599780501189
+        },
+        "churn_by_plan": {
+            "basic": 0.49283709411117227,
+            "plus": 0.5086495863357353,
+            "premium": 0.4978972091738049
+        },
+        "churn_correlations": {
+            "engagement_correlation": 0.0007940830757087402,
+            "ltv_correlation": 0.008585606782079825
+        }
+    },
+    "personalization_insights": {
+        "content_preferences": {
+            "interactive": 0.25745454545454544,
+            "video": 0.25181818181818183,
+            "audio": 0.24772727272727274,
+            "text": 0.243
+        },
+        "communication_preferences": {
+            "sms": 0.25336363636363635,
+            "none": 0.25281818181818183,
+            "push_notification": 0.24754545454545454,
+            "email": 0.24627272727272728
+        },
+        "feature_insights": {
+            "feature_usage_mean": {
+                "feature1": 0.5032027272727272,
+                "feature2": 0.5011936363636363,
+                "feature3": 0.5033500000000001
+            },
+            "feature_usage_correlation": {
+                "feature1_feature2": 0.009026771813467878,
+                "feature1_feature3": 0.014257992069681149,
+                "feature2_feature1": 0.009026771813467878,
+                "feature2_feature3": 0.004827572428927945,
+                "feature3_feature1": 0.014257992069681152,
+                "feature3_feature2": 0.004827572428927945
+            }
+        }
+    },
+    "referral_growth_insights": {
+        "referral_source_distribution": {
+            "referral": 0.255,
+            "paid_ad": 0.2489090909090909,
+            "organic": 0.24881818181818183,
+            "social_media": 0.24727272727272728
+        },
+        "avg_referral_count": 5.027636363636364,
+        "referral_count_distribution": {
+            "10": 0.09645454545454546,
+            "2": 0.09390909090909091,
+            "5": 0.09236363636363637,
+            "9": 0.0910909090909091,
+            "6": 0.09072727272727273,
+            "4": 0.09054545454545454,
+            "3": 0.09036363636363637,
+            "0": 0.08945454545454545,
+            "7": 0.08872727272727272,
+            "8": 0.08836363636363637,
+            "1": 0.088
+        },
+        "referral_ltv_correlation": -0.02065550893475999,
+        "referral_insights_by_plan": {
+            "premium": {
+                "avg_referral_count": 4.992815694943355,
+                "avg_lifetime_value": 490.7326968775905
+            },
+            "basic": {
+                "avg_referral_count": 5.086130985140342,
+                "avg_lifetime_value": 495.8996175013759
+            },
+            "plus": {
+                "avg_referral_count": 5.004536962903656,
+                "avg_lifetime_value": 499.46852148385375
+            }
+        }
+    }
+}
