@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -294,6 +294,56 @@ def create_app(config_class=Config):
             })
         except Exception as e:
             app.logger.error(f"Referral insights error: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+        
+    @app.route('/api/raw-user-data', methods=['GET'])
+    def get_raw_user_data():
+        try:
+            # Extract query parameters
+            min_age = request.args.get('minAge', type=int)
+            max_age = request.args.get('maxAge', type=int)
+            plan = request.args.get('plan')
+            min_lifetime_value = request.args.get('minLifetimeValue', type=float)
+            sort_by = request.args.get('sortBy', 'lifetime_value')
+            sort_order = request.args.get('sortOrder', 'desc')
+
+            # Base query
+            query = User.query
+
+            # Apply filters
+            if min_age:
+                query = query.filter(User.age >= min_age)
+            if max_age:
+                query = query.filter(User.age <= max_age)
+            if plan:
+                query = query.filter(User.plan == plan)
+            if min_lifetime_value:
+                query = query.filter(User.lifetime_value >= min_lifetime_value)
+
+            # Apply sorting
+            if sort_order == 'desc':
+                query = query.order_by(getattr(User, sort_by).desc())
+            else:
+                query = query.order_by(getattr(User, sort_by).asc())
+
+            # Limit results to prevent overwhelming the frontend
+            query = query.limit(1000)
+
+            # Execute query and convert to list of dictionaries
+            users = query.all()
+            user_data = [{
+                'username': user.username,
+                'email': user.email,
+                'age': user.age,
+                'plan': user.plan,
+                'lifetime_value': user.lifetime_value,
+                'total_sessions': user.total_sessions
+            } for user in users]
+
+            return jsonify(user_data)
+
+        except Exception as e:
+            app.logger.error(f"Error in raw user data route: {str(e)}")
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/feature-usage', methods=['GET'])

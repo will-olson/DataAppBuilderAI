@@ -9,7 +9,7 @@ import PersonalizationPage from './components/pages/PersonalizationPage';
 import ChurnPredictionPage from './components/pages/ChurnPredictionPage';
 import FeatureUsagePage from './components/pages/FeatureUsagePage';
 import ReferralGrowthPage from './components/pages/ReferralGrowthPage';
-
+import DataExplorationPage from './components/pages/DataExplorationPage';
 
 function App() {
   return (
@@ -24,6 +24,7 @@ function App() {
           <Route path="/churn-prediction" element={<ChurnPredictionPage />} />
           <Route path="/referral-insights" element={<ReferralGrowthPage />} />
           <Route path="/feature-usage" element={<FeatureUsagePage />} />
+          <Route path="/data-exploration" element={<DataExplorationPage />} />
         </Routes>
       </Layout>
     </Router>

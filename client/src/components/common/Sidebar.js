@@ -1,4 +1,3 @@
-// src/components/common/Sidebar.js
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -38,6 +37,11 @@ const Sidebar = () => {
       title: 'Feature Usage', 
       icon: '🧩', 
       link: '/feature-usage' 
+    },
+    { 
+      title: 'Data Exploration', 
+      icon: '🔍', 
+      link: '/data-exploration' 
     }
   ];
 
