@@ -14,6 +14,12 @@ export const fetchData = async (endpoint) => {
   }
 };
 
+// Existing exports
 export const fetchUserSegments = () => fetchData('/segments');
 export const fetchUserJourneyData = () => fetchData('/user-journey');
 export const fetchPersonalizationData = () => fetchData('/personalization');
+
+// New exports following the same pattern
+export const fetchChurnPredictionData = () => fetchData('/churn-prediction');
+export const fetchReferralInsights = () => fetchData('/referral-insights');
+export const fetchFeatureUsageAnalytics = () => fetchData('/feature-usage');

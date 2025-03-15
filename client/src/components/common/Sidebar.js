@@ -23,6 +23,21 @@ const Sidebar = () => {
       title: 'Personalization', 
       icon: '🎯', 
       link: '/personalization' 
+    },
+    { 
+      title: 'Churn Prediction', 
+      icon: '⚠️', 
+      link: '/churn-prediction' 
+    },
+    { 
+      title: 'Referral Insights', 
+      icon: '🔗', 
+      link: '/referral-insights' 
+    },
+    { 
+      title: 'Feature Usage', 
+      icon: '🧩', 
+      link: '/feature-usage' 
     }
   ];
 

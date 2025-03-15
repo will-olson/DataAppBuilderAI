@@ -6,6 +6,10 @@ import Dashboard from './components/pages/Dashboard';
 import SegmentationPage from './components/pages/Segmentation';
 import UserJourneyPage from './components/pages/UserJourney';
 import PersonalizationPage from './components/pages/PersonalizationPage';
+import ChurnPredictionPage from './components/pages/ChurnPredictionPage';
+import FeatureUsagePage from './components/pages/FeatureUsagePage';
+import ReferralGrowthPage from './components/pages/ReferralGrowthPage';
+
 
 function App() {
   return (
@@ -17,6 +21,9 @@ function App() {
           <Route path="/segmentation" element={<SegmentationPage />} />
           <Route path="/user-journey" element={<UserJourneyPage />} />
           <Route path="/personalization" element={<PersonalizationPage />} />
+          <Route path="/churn-prediction" element={<ChurnPredictionPage />} />
+          <Route path="/referral-insights" element={<ReferralGrowthPage />} />
+          <Route path="/feature-usage" element={<FeatureUsagePage />} />
         </Routes>
       </Layout>
     </Router>
