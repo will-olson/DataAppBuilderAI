@@ -1,4 +1,3 @@
-// src/components/common/Navbar.js
 import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -9,14 +8,17 @@ import {
   Menu, 
   MenuItem, 
   IconButton,
-  Avatar
+  Avatar,
+  Chip,
+  Box
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SearchIcon from '@mui/icons-material/Search';
-
-// Mock context - replace with actual auth context
-const AuthContext = React.createContext(null);
+import BrainIcon from '@mui/icons-material/Psychology'; // AI/Brain icon
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import ScatterPlotIcon from '@mui/icons-material/ScatterPlot';
 
 const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -46,7 +48,6 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    // Implement logout logic
     console.log('Logging out');
     handleProfileMenuClose();
   };
@@ -64,10 +65,10 @@ const Navbar = () => {
             textDecoration: 'none' 
           }}
         >
-          User Insights Platform
+          Growth Product Marketing AI Assistant
         </Typography>
 
-        {/* Quick Navigation */}
+        {/* Quick Navigation
         <Button color="inherit" component={Link} to="/dashboard">
           Dashboard
         </Button>
@@ -76,9 +77,42 @@ const Navbar = () => {
         </Button>
         <Button color="inherit" component={Link} to="/user-journey">
           User Journey
-        </Button>
+        </Button> */}
 
-        {/* Search and Notifications */}
+        {/* AI-Powered Insights */}
+        <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
+          <Typography variant="body2" sx={{ mr: 1, color: 'text.secondary' }}>
+            AI Tools
+          </Typography>
+          <Chip 
+            icon={<BrainIcon />} 
+            label="Strategic Analysis" 
+            component={Link} 
+            to="/strategic-analysis"
+            color="primary"
+            variant="outlined"
+            sx={{ mr: 1 }}
+          />
+          <Chip 
+            icon={<ScatterPlotIcon />} 
+            label="A/B Testing" 
+            component={Link} 
+            to="/ab-testing"
+            color="secondary"
+            variant="outlined"
+            sx={{ mr: 1 }}
+          />
+          <Chip 
+            icon={<TrendingUpIcon />} 
+            label="Predictive Insights" 
+            component={Link} 
+            to="/predictive-insights"
+            color="warning"
+            variant="outlined"
+          />
+        </Box>
+
+        {/* Rest of the Navbar remains the same */}
         <IconButton color="inherit">
           <SearchIcon />
         </IconButton>
@@ -89,7 +123,6 @@ const Navbar = () => {
           <NotificationsIcon />
         </IconButton>
 
-        {/* User Profile */}
         <IconButton 
           color="inherit" 
           onClick={handleProfileMenuOpen}
@@ -101,7 +134,7 @@ const Navbar = () => {
           )}
         </IconButton>
 
-        {/* Profile Menu */}
+        {/* Profile and Notifications Menus remain the same */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
@@ -118,7 +151,6 @@ const Navbar = () => {
           </MenuItem>
         </Menu>
 
-        {/* Notifications Menu */}
         <Menu
           anchorEl={notificationAnchorEl}
           open={Boolean(notificationAnchorEl)}
