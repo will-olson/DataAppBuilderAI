@@ -1,4 +1,4 @@
-# 🚀 Growth Product Marketing AI Analytics Platform
+# 🚀 Growth Marketing AI Assistant
 
 ## 📝 Overview
 

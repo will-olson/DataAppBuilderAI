@@ -56,3 +56,15 @@ export const fetchRawUserData = async (filters = {}) => {
     throw error;
   }
 };
+
+export const fetchAIInsights = {
+  getStrategicAnalysis: () => fetchData('/ai-insights?type=strategic'),
+  
+  getABTestingAnalysis: () => fetchData('/ai-insights?type=ab_testing'),
+  
+  getPredictiveInsights: () => fetchData('/ai-insights?type=predictive'),
+  
+  getSegmentDetails: () => fetchData('/segment-details'),
+  
+  getRevenueForecast: () => fetchData('/revenue-forecast')
+};
