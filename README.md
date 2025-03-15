@@ -1,4 +1,4 @@
-# 🚀 User Insights and Marketing Analytics Platform
+# 🚀 Growth Product Marketing AI Analytics Platform
 
 ## 📝 Overview
 
