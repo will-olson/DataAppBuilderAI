@@ -201,48 +201,49 @@ const Segmentation = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h5">Segment Distribution</Typography>
+              <Typography variant="h5">Segment Revenue Contribution</Typography>
               <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={segmentChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    outerRadius={150}
-                    fill="#8884d8"
-                    dataKey="userCount"
-                    label={({ name, percent, midAngle, cx, cy, outerRadius }) => {
-                      const RADIAN = Math.PI / 180;
-                      const radius = outerRadius + 30;
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-                      return (
-                        <text
-                          x={x}
-                          y={y}
-                          fill="#8884d8"
-                          textAnchor={midAngle > 90 && midAngle < 270 ? 'end' : 'start'}
-                          dominantBaseline="central"
-                        >
-                          {`${name} ${(percent * 100).toFixed(0)}%`}
-                        </text>
-                      );
-                    }}
-                  >
-                    {segmentChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <BarChart data={segments.map(segment => ({
+                  name: segment.name,
+                  revenue: segment.userCount * segment.avgLTV,
+                  userCount: segment.userCount
+                }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis 
+                    label={{ 
+                      value: '', 
+                      angle: -90, 
+                      position: 'insideLeft' 
+                    }} 
+                  />
                   <Tooltip 
                     formatter={(value, name, props) => [
-                      `${value} Users`, 
-                      `Avg LTV: $${props.payload.avgLTV.toFixed(2)}`
+                      `$${value.toLocaleString()}`, 
+                      `${props.payload.name} Revenue`
                     ]}
+                    labelFormatter={(label) => `Segment: ${label}`}
                   />
                   <Legend />
-                </PieChart>
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="#8884d8"
+                    name="Revenue"
+                  >
+                    {segments.map((segment, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]} 
+                      />
+                    ))}
+                  </Bar>
+                  <Line
+                    type="monotone"
+                    dataKey="userCount"
+                    stroke="#ff7300"
+                    name="User Count"
+                  />
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
