@@ -58,13 +58,104 @@ export const fetchRawUserData = async (filters = {}) => {
 };
 
 export const fetchAIInsights = {
-  getStrategicAnalysis: () => fetchData('/ai-insights?type=strategic'),
+  getStrategicAnalysis: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ai-insights?type=strategic`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Validate data structure
+      if (!data.insights || !data.segment_profiles) {
+        throw new Error('Invalid data structure received');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Strategic Analysis Fetch Error:', error);
+      throw error;
+    }
+  },
   
-  getABTestingAnalysis: () => fetchData('/ai-insights?type=ab_testing'),
+  getABTestingAnalysis: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ai-insights?type=ab_testing`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Validate data structure for AB testing
+      if (!data.insights) {
+        throw new Error('Invalid AB testing data structure');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('AB Testing Analysis Fetch Error:', error);
+      throw error;
+    }
+  },
   
-  getPredictiveInsights: () => fetchData('/ai-insights?type=predictive'),
+  getPredictiveInsights: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ai-insights?type=predictive`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Validate data structure for predictive insights
+      if (!data.insights) {
+        throw new Error('Invalid predictive insights data structure');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Predictive Insights Fetch Error:', error);
+      throw error;
+    }
+  },
   
-  getSegmentDetails: () => fetchData('/segment-details'),
+  getSegmentDetails: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/segment-details`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Segment Details Fetch Error:', error);
+      throw error;
+    }
+  },
   
-  getRevenueForecast: () => fetchData('/revenue-forecast')
+  getRevenueForecast: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/revenue-forecast`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Revenue Forecast Fetch Error:', error);
+      throw error;
+    }
+  }
 };
