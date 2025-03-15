@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import UserDataTable from '../../components/segments/journey/UserDataTable';
 import { 
-  Container, 
-  Typography, 
-  Card, 
-  CardContent, 
-  Grid, 
-  Button,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper
+    Container, 
+    Typography, 
+    Card, 
+    CardContent, 
+    Grid, 
+    Button,
+    CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    List,
+    ListItem,
+    ListItemText,
+    Box
 } from '@mui/material';
 import { 
   PieChart, 
@@ -35,6 +36,7 @@ const DataExplorationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeView, setActiveView] = useState('table');
+  const [selectedUser, setSelectedUser] = useState(null);
   const [filters, setFilters] = useState({
     minAge: '',
     maxAge: '',
@@ -104,32 +106,72 @@ const DataExplorationPage = () => {
     }));
   };
 
-  // Loading state
+  // Handler for row details
+  const handleRowDetails = (user) => {
+    setSelectedUser(user);
+  };
+
+  // Handler for data export
+  const handleExport = (selectedUsers) => {
+    // Implement export logic
+    console.log('Exporting users:', selectedUsers);
+    // Could trigger file download, open export modal, etc.
+  };
+
+  // Render loading state
   if (loading) {
     return (
       <Container>
-        <CircularProgress />
-        <Typography>Loading User Data...</Typography>
+        <Box 
+          display="flex" 
+          flexDirection="column" 
+          alignItems="center" 
+          justifyContent="center" 
+          height="100vh"
+        >
+          <CircularProgress size={60} />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Loading User Data...
+          </Typography>
+        </Box>
       </Container>
     );
   }
 
-  // Error state
+  // Render error state
   if (error) {
     return (
       <Container>
-        <Typography color="error">
-          Error loading user data: {error}
-        </Typography>
+        <Box 
+          display="flex" 
+          flexDirection="column" 
+          alignItems="center" 
+          justifyContent="center" 
+          height="100vh"
+        >
+          <Typography color="error" variant="h6">
+            Error loading user data: {error}
+          </Typography>
+        </Box>
       </Container>
     );
   }
 
-  // No data state
+  // Render no data state
   if (!userData || userData.length === 0) {
     return (
       <Container>
-        <Typography>No user data available</Typography>
+        <Box 
+          display="flex" 
+          flexDirection="column" 
+          alignItems="center" 
+          justifyContent="center" 
+          height="100vh"
+        >
+          <Typography variant="h6">
+            No user data available
+          </Typography>
+        </Box>
       </Container>
     );
   }
@@ -174,32 +216,11 @@ const DataExplorationPage = () => {
           <Card>
             <CardContent>
               {activeView === 'table' && (
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Username</TableCell>
-                        <TableCell>Email</TableCell>
-                        <TableCell>Age</TableCell>
-                        <TableCell>Plan</TableCell>
-                        <TableCell>Lifetime Value</TableCell>
-                        <TableCell>Total Sessions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {userData.map((user, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{user.username}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.age}</TableCell>
-                          <TableCell>{user.plan}</TableCell>
-                          <TableCell>${user.lifetime_value.toFixed(2)}</TableCell>
-                          <TableCell>{user.total_sessions}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <UserDataTable 
+                  userData={userData}
+                  onRowDetails={handleRowDetails}
+                  onExport={handleExport}
+                />
               )}
 
               {activeView === 'planDistribution' && (
@@ -233,7 +254,7 @@ const DataExplorationPage = () => {
               {activeView === 'ltvDistribution' && (
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={getLTVDistribution()}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokedasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis label={{ value: 'User Count', angle: -90, position: 'insideLeft' }} />
                     <Tooltip />
@@ -284,6 +305,58 @@ const DataExplorationPage = () => {
           </Grid>
         </Grid>
       </Grid>
+
+      {/* User Details Modal */}
+      <Dialog 
+        open={!!selectedUser} 
+        onClose={() => setSelectedUser(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>User Details</DialogTitle>
+        <DialogContent>
+          {selectedUser && (
+            <List>
+              <ListItem>
+                <ListItemText 
+                  primary="Username" 
+                  secondary={selectedUser.username} 
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary="Email" 
+                  secondary={selectedUser.email} 
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary="Age" 
+                  secondary={selectedUser.age} 
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary="Plan" 
+                  secondary={selectedUser.plan} 
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary="Lifetime Value" 
+                  secondary={`$${selectedUser.lifetime_value.toFixed(2)}`} 
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemText 
+                  primary="Total Sessions" 
+                  secondary={selectedUser.total_sessions} 
+                />
+              </ListItem>
+            </List>
+          )}
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };

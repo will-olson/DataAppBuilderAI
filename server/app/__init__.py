@@ -327,7 +327,7 @@ def create_app(config_class=Config):
                 query = query.order_by(getattr(User, sort_by).asc())
 
             # Limit results to prevent overwhelming the frontend
-            query = query.limit(1000)
+            query = query.limit(21000)
 
             # Execute query and convert to list of dictionaries
             users = query.all()
