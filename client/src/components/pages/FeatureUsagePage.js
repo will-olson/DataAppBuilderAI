@@ -4,14 +4,33 @@ import {
   Typography, 
   Card, 
   CardContent,
-  CircularProgress
+  CircularProgress,
+  Grid,
+  Button
 } from '@mui/material';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend,
+  PieChart, 
+  Pie, 
+  Cell,
+  ResponsiveContainer
+} from 'recharts';
 import { fetchFeatureUsageAnalytics } from '../../services/api';
 
 const FeatureUsagePage = () => {
   const [featureData, setFeatureData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeChart, setActiveChart] = useState('topFeatures');
+
+  // Chart color palette
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   useEffect(() => {
     const fetchFeatureData = async () => {
@@ -78,41 +97,86 @@ const FeatureUsagePage = () => {
     );
   }
 
+  // Prepare data for charts
+  const topFeaturesChartData = featureData.topFeatures.map(feature => ({
+    name: feature.name,
+    usage: feature.usagePercentage * 100
+  }));
+
+  const segmentFeatureUsageData = featureData.featureUsageBySegment.flatMap(segment => 
+    segment.features.map(feature => ({
+      segment: segment.segment,
+      feature: feature.name,
+      usage: feature.usagePercentage * 100
+    }))
+  );
+
   return (
     <Container>
       <Typography variant="h4">Feature Usage Analytics</Typography>
       
+      {/* Chart Selection Buttons */}
+      <Grid container spacing={2} sx={{ my: 2 }}>
+        <Grid item>
+          <Button 
+            variant={activeChart === 'topFeatures' ? 'contained' : 'outlined'}
+            onClick={() => setActiveChart('topFeatures')}
+          >
+            Top Features
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button 
+            variant={activeChart === 'segmentUsage' ? 'contained' : 'outlined'}
+            onClick={() => setActiveChart('segmentUsage')}
+          >
+            Segment Usage
+          </Button>
+        </Grid>
+      </Grid>
+
+      {/* Chart Container */}
       <Card>
         <CardContent>
-          <Typography variant="h5">Top Features</Typography>
-          {featureData.topFeatures.length > 0 ? (
-            featureData.topFeatures.map((feature, index) => (
-              <Typography key={index}>
-                {feature.name}: {(feature.usagePercentage * 100).toFixed(2)}%
-              </Typography>
-            ))
-          ) : (
-            <Typography>No top features data available</Typography>
+          {activeChart === 'topFeatures' && (
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={topFeaturesChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip 
+                  formatter={(value) => [`${value.toFixed(2)}%`, 'Usage']}
+                />
+                <Legend />
+                <Bar dataKey="usage" fill="#8884d8">
+                  {topFeaturesChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           )}
-        </CardContent>
-      </Card>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h5">Feature Usage by Segment</Typography>
-          {featureData.featureUsageBySegment.length > 0 ? (
-            featureData.featureUsageBySegment.map((segment, segmentIndex) => (
-              <div key={segmentIndex}>
-                <Typography variant="h6">{segment.segment}</Typography>
-                {segment.features.map((feature, featureIndex) => (
-                  <Typography key={featureIndex}>
-                    {feature.name}: {(feature.usagePercentage * 100).toFixed(2)}%
-                  </Typography>
-                ))}
-              </div>
-            ))
-          ) : (
-            <Typography>No segment feature usage data available</Typography>
+          {activeChart === 'segmentUsage' && (
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={segmentFeatureUsageData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="feature" />
+                <YAxis label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }} />
+                <Tooltip 
+                  formatter={(value, name, props) => [
+                    `${value.toFixed(2)}%`, 
+                    `${props.payload.feature} in ${props.payload.segment}`
+                  ]}
+                />
+                <Legend />
+                <Bar dataKey="usage" fill="#8884d8">
+                  {segmentFeatureUsageData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
