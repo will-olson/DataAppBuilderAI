@@ -161,71 +161,72 @@ def create_app(config_class=Config):
     @app.route('/api/churn-prediction', methods=['GET'])
     def get_churn_prediction():
         try:
-            # SQLite-compatible column inspection
-            column_query = text("""
-                PRAGMA table_info(users)
+            # Query to calculate churn risk segments dynamically
+            segments_query = text("""
+                SELECT 
+                    CASE 
+                        WHEN churn_risk > 0.7 THEN 'High Risk'
+                        WHEN churn_risk > 0.4 THEN 'Medium Risk'
+                        ELSE 'Low Risk'
+                    END AS risk_segment,
+                    COUNT(*) as user_count,
+                    AVG(churn_risk) as avg_churn_risk
+                FROM users
+                GROUP BY risk_segment
             """)
             
-            # Execute column inspection
-            column_results = db.session.execute(column_query)
-            
-            # Convert to list and log column names
-            columns = [row[1] for row in column_results]
-            app.logger.info(f"All columns in users table: {columns}")
-            
-            # Find churn-related columns
-            churn_columns = [col for col in columns if 'churn' in col.lower()]
-            app.logger.info(f"Churn-related columns: {churn_columns}")
-            
-            # Use churn_risk column if it exists, otherwise use a default query
-            churn_query = text("""
+            # Query to identify churn factors
+            factors_query = text("""
                 SELECT 
-                    COALESCE(AVG(churn_risk), 0) as overall_churn_risk,
-                    COUNT(*) as total_users
+                    CASE 
+                        WHEN total_sessions < 10 THEN 'Inactivity'
+                        WHEN engagement_score < 0.3 THEN 'Low Engagement'
+                        ELSE 'Other Factors'
+                    END AS churn_factor,
+                    COUNT(*) as factor_count,
+                    AVG(churn_risk) as avg_factor_risk
+                FROM users
+                GROUP BY churn_factor
+            """)
+            
+            # Execute queries
+            segments_results = db.session.execute(segments_query)
+            factors_results = db.session.execute(factors_query)
+            
+            # Calculate overall churn risk
+            overall_churn_query = text("""
+                SELECT AVG(churn_risk) as overall_churn_risk
                 FROM users
             """)
+            overall_result = db.session.execute(overall_churn_query).first()
             
-            # Execute the query and fetch the first row
-            result = db.session.execute(churn_query).first()
+            # Process segments
+            high_risk_segments = [
+                {
+                    'name': row.risk_segment,
+                    'userCount': row.user_count,
+                    'churnRisk': float(row.avg_churn_risk)
+                }
+                for row in segments_results
+            ]
             
-            # Provide default data if no results
+            # Process churn factors
+            churn_factors = [
+                {
+                    'name': row.churn_factor,
+                    'impact': float(row.avg_factor_risk),
+                    'userCount': row.factor_count
+                }
+                for row in factors_results
+            ]
+            
             return jsonify({
-                'overallChurnRisk': float(result.overall_churn_risk) if result is not None else 0,
-                'highRiskSegments': [
-                    {
-                        'name': 'High Risk',
-                        'churnRisk': 0.7,
-                        'userCount': result.total_users // 3 if result is not None else 0
-                    },
-                    {
-                        'name': 'Medium Risk',
-                        'churnRisk': 0.4,
-                        'userCount': result.total_users // 3 if result is not None else 0
-                    },
-                    {
-                        'name': 'Low Risk',
-                        'churnRisk': 0.1,
-                        'userCount': result.total_users // 3 if result is not None else 0
-                    }
-                ],
-                'churnFactors': [
-                    {
-                        'name': 'Inactivity',
-                        'impact': 0.6,
-                        'userCount': result.total_users // 4 if result is not None else 0
-                    },
-                    {
-                        'name': 'Low Engagement',
-                        'impact': 0.4,
-                        'userCount': result.total_users // 4 if result is not None else 0
-                    }
-                ]
+                'overallChurnRisk': float(overall_result.overall_churn_risk),
+                'highRiskSegments': high_risk_segments,
+                'churnFactors': churn_factors
             })
+        
         except Exception as e:
-            # Log the full error details
-            import traceback
-            traceback.print_exc()
-            
             app.logger.error(f"Churn prediction error: {str(e)}")
             return jsonify({
                 'overallChurnRisk': 0,
