@@ -127,97 +127,97 @@ def create_app():
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     
-    @app.route('/api/churn-prediction', methods=['GET'])
-    def get_churn_prediction():
-        try:
-            # SQLite-compatible column inspection
-            column_query = text("""
-                PRAGMA table_info(users)
-            """)
+    # @app.route('/api/churn-prediction', methods=['GET'])
+    # def get_churn_prediction():
+    #     try:
+    #         # SQLite-compatible column inspection
+    #         column_query = text("""
+    #             PRAGMA table_info(users)
+    #         """)
             
-            # Execute column inspection
-            column_results = db.session.execute(column_query)
+    #         # Execute column inspection
+    #         column_results = db.session.execute(column_query)
             
-            # Log all column names
-            columns = [row[1] for row in column_results]
-            app.logger.info(f"All columns in users table: {columns}")
+    #         # Log all column names
+    #         columns = [row[1] for row in column_results]
+    #         app.logger.info(f"All columns in users table: {columns}")
             
-            # Check for churn-related columns
-            churn_columns = [col for col in columns if 'churn' in col.lower()]
-            app.logger.info(f"Churn-related columns: {churn_columns}")
+    #         # Check for churn-related columns
+    #         churn_columns = [col for col in columns if 'churn' in col.lower()]
+    #         app.logger.info(f"Churn-related columns: {churn_columns}")
             
-            # Flexible churn risk column selection
-            churn_risk_column = next((col for col in columns if col.lower() in ['churn_risk', 'churnrisk']), None)
+    #         # Flexible churn risk column selection
+    #         churn_risk_column = next((col for col in columns if col.lower() in ['churn_risk', 'churnrisk']), None)
             
-            if not churn_risk_column:
-                app.logger.warning("No churn risk column found")
-                return jsonify({
-                    'error': 'No churn risk column found',
-                    'availableColumns': columns
-                }), 400
+    #         if not churn_risk_column:
+    #             app.logger.warning("No churn risk column found")
+    #             return jsonify({
+    #                 'error': 'No churn risk column found',
+    #                 'availableColumns': columns
+    #             }), 400
             
-            # Dynamic query using the found column
-            churn_query = text(f"""
-                SELECT 
-                    CASE 
-                        WHEN {churn_risk_column} > 0.7 THEN 'High Risk'
-                        WHEN {churn_risk_column} > 0.4 THEN 'Medium Risk'
-                        ELSE 'Low Risk'
-                    END AS risk_segment,
-                    COUNT(*) as user_count,
-                    AVG({churn_risk_column}) as avg_churn_risk,
-                    AVG(lifetime_value) as avg_lifetime_value
-                FROM users
-                GROUP BY risk_segment
-            """)
+    #         # Dynamic query using the found column
+    #         churn_query = text(f"""
+    #             SELECT 
+    #                 CASE 
+    #                     WHEN {churn_risk_column} > 0.7 THEN 'High Risk'
+    #                     WHEN {churn_risk_column} > 0.4 THEN 'Medium Risk'
+    #                     ELSE 'Low Risk'
+    #                 END AS risk_segment,
+    #                 COUNT(*) as user_count,
+    #                 AVG({churn_risk_column}) as avg_churn_risk,
+    #                 AVG(lifetime_value) as avg_lifetime_value
+    #             FROM users
+    #             GROUP BY risk_segment
+    #         """)
             
-            # Execute and log the query
-            try:
-                churn_results = db.session.execute(churn_query)
+    #         # Execute and log the query
+    #         try:
+    #             churn_results = db.session.execute(churn_query)
                 
-                # Convert results to list and log
-                results_list = list(churn_results)
-                app.logger.info(f"Churn query results: {results_list}")
+    #             # Convert results to list and log
+    #             results_list = list(churn_results)
+    #             app.logger.info(f"Churn query results: {results_list}")
                 
-                # Process results
-                high_risk_segments = [
-                    {
-                        'name': row.risk_segment,
-                        'userCount': row.user_count,
-                        'churnRisk': float(row.avg_churn_risk),
-                        'avgLifetimeValue': float(row.avg_lifetime_value)
-                    }
-                    for row in results_list
-                ]
+    #             # Process results
+    #             high_risk_segments = [
+    #                 {
+    #                     'name': row.risk_segment,
+    #                     'userCount': row.user_count,
+    #                     'churnRisk': float(row.avg_churn_risk),
+    #                     'avgLifetimeValue': float(row.avg_lifetime_value)
+    #                 }
+    #                 for row in results_list
+    #             ]
                 
-                # Calculate overall churn risk
-                overall_churn_risk = sum(segment['churnRisk'] for segment in high_risk_segments) / len(high_risk_segments) if high_risk_segments else 0
+    #             # Calculate overall churn risk
+    #             overall_churn_risk = sum(segment['churnRisk'] for segment in high_risk_segments) / len(high_risk_segments) if high_risk_segments else 0
                 
-                return jsonify({
-                    'overallChurnRisk': overall_churn_risk,
-                    'highRiskSegments': high_risk_segments,
-                    'churnFactors': [
-                        {
-                            'name': 'Potential Churn Factors',
-                            'impact': 0.5,
-                            'userCount': sum(segment['userCount'] for segment in high_risk_segments)
-                        }
-                    ]
-                })
+    #             return jsonify({
+    #                 'overallChurnRisk': overall_churn_risk,
+    #                 'highRiskSegments': high_risk_segments,
+    #                 'churnFactors': [
+    #                     {
+    #                         'name': 'Potential Churn Factors',
+    #                         'impact': 0.5,
+    #                         'userCount': sum(segment['userCount'] for segment in high_risk_segments)
+    #                     }
+    #                 ]
+    #             })
             
-            except Exception as query_error:
-                app.logger.error(f"Query execution error: {str(query_error)}")
-                return jsonify({
-                    'error': 'Query execution failed',
-                    'details': str(query_error)
-                }), 500
+    #         except Exception as query_error:
+    #             app.logger.error(f"Query execution error: {str(query_error)}")
+    #             return jsonify({
+    #                 'error': 'Query execution failed',
+    #                 'details': str(query_error)
+    #             }), 500
         
-        except Exception as e:
-            app.logger.error(f"Unexpected error in churn prediction: {str(e)}")
-            return jsonify({
-                'error': 'Unexpected server error',
-                'details': str(e)
-            }), 500
+    #     except Exception as e:
+    #         app.logger.error(f"Unexpected error in churn prediction: {str(e)}")
+    #         return jsonify({
+    #             'error': 'Unexpected server error',
+    #             'details': str(e)
+    #         }), 500
 
     @app.route('/api/feature-usage', methods=['GET'])
     def get_feature_usage():
