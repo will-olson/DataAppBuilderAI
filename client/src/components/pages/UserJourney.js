@@ -6,8 +6,16 @@ import {
   CardContent, 
   Grid, 
   Button,
-  CircularProgress
+  CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
+import { 
+  ExpandMore as ExpandMoreIcon,
+  TrendingUp as TrendingUpIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
 import { 
   BarChart, 
   Bar, 
@@ -78,6 +86,31 @@ const UserJourneyPage = () => {
     avgLTV: stage.avgLTV,
     churnRisk: stage.avgChurnRisk * 100
   }));
+
+  // Prepare Predictor Data
+  const predictorData = {
+    stages: journeyData.map(stage => ({
+      name: stage.stage,
+      userCount: stage.userCount,
+      avgLTV: stage.avgLTV,
+      churnRisk: stage.avgChurnRisk
+    })),
+    transitionProbabilities: [
+      { from: 'Onboarding', to: 'Active', probability: 0.75 },
+      { from: 'Active', to: 'Power User', probability: 0.4 },
+      { from: 'Active', to: 'Churn', probability: 0.2 }
+    ],
+    keyInsights: [
+      {
+        title: 'Critical Conversion Points',
+        description: 'Identify key stages where users are most likely to upgrade or churn'
+      },
+      {
+        title: 'Engagement Optimization',
+        description: 'Focus on improving user experience in early stages'
+      }
+    ]
+  };
 
   return (
     <Container>
@@ -218,6 +251,98 @@ const UserJourneyPage = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* User Journey Predictor Accordion */}
+      <Accordion sx={{ mt: 3 }}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="journey-predictor-content"
+          id="journey-predictor-header"
+        >
+          <Typography variant="h6">
+            User Journey Predictor
+            <WarningIcon 
+              color={
+                predictorData.stages.some(stage => stage.churnRisk > 0.5) 
+                  ? 'error' 
+                  : 'warning'
+              }
+              sx={{ ml: 1 }}
+            />
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={2}>
+            {/* Journey Stages */}
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle1">Journey Stages</Typography>
+              {predictorData.stages.map((stage, index) => (
+                <Card key={index} sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Grid container alignItems="center">
+                      <Grid item xs={8}>
+                        <Typography variant="h6">{stage.name}</Typography>
+                      </Grid>
+                      <Grid item xs={4} sx={{ textAlign: 'right' }}>
+                        <TrendingUpIcon 
+                          color={
+                            stage.churnRisk > 0.5 
+                              ? 'error' 
+                              : 'success'
+                          }
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography>
+                          Users: {stage.userCount}
+                        </Typography>
+                        <Typography>
+                          Avg LTV: ${stage.avgLTV.toFixed(2)}
+                        </Typography>
+                        <Typography color={stage.churnRisk > 0.5 ? 'error' : 'text.secondary'}>
+                          Churn Risk: {(stage.churnRisk * 100).toFixed(2)}%
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              ))}
+            </Grid>
+
+            {/* Transition Probabilities */}
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle1">Stage Transitions</Typography>
+              {predictorData.transitionProbabilities.map((transition, index) => (
+                <Card key={index} sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="body1">
+                      {transition.from} → {transition.to}
+                    </Typography>
+                    <Typography variant="h6" color="primary">
+                      {(transition.probability * 100).toFixed(2)}% Chance
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Grid>
+
+            {/* Key Insights */}
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle1">Key Insights</Typography>
+              {predictorData.keyInsights.map((insight, index) => (
+                <Card key={index} sx={{ mb: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6">{insight.title}</Typography>
+                    <Typography variant="body2">
+                      {insight.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Grid>
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
     </Container>
   );
 };

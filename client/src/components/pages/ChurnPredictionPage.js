@@ -10,42 +10,44 @@ import {
   ListItemText,
   CircularProgress,
   Grid,
-  Button
+  Button,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
+import { 
+  ExpandMore as ExpandMoreIcon,
+  TrendingDown as TrendingDownIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { fetchChurnPredictionData } from '../../services/api';
+import { fetchChurnPredictionData, fetchUserJourneyData } from '../../services/api';
 
 const ChurnPredictionPage = () => {
     const [churnData, setChurnData] = useState(null);
+    const [journeyData, setJourneyData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeChart, setActiveChart] = useState('segments');
   
     useEffect(() => {
-      const fetchChurnData = async () => {
+      const fetchData = async () => {
         try {
-          console.log('Fetching churn data started');
           setLoading(true);
           
-          const data = await fetchChurnPredictionData();
+          // Fetch both churn prediction and user journey data
+          const [predictionData, userJourneyData] = await Promise.all([
+            fetchChurnPredictionData(),
+            fetchUserJourneyData()
+          ]);
           
-          console.log('Received churn data:', data);
-          
-          // Validate data structure
-          if (!data) {
-            throw new Error('No data received');
+          // Validate data
+          if (!predictionData) {
+            throw new Error('No prediction data received');
           }
           
-          // Validate specific properties
-          if (
-            typeof data.overallChurnRisk === 'undefined' ||
-            !Array.isArray(data.highRiskSegments) ||
-            !Array.isArray(data.churnFactors)
-          ) {
-            throw new Error('Invalid data structure');
-          }
-          
-          setChurnData(data);
+          setChurnData(predictionData);
+          setJourneyData(userJourneyData || []); // Provide default empty array
           setLoading(false);
         } catch (error) {
           console.error('Detailed churn prediction fetch error:', error);
@@ -54,7 +56,7 @@ const ChurnPredictionPage = () => {
         }
       };
   
-      fetchChurnData();
+      fetchData();
     }, []);
   
     // Loading state
@@ -99,13 +101,46 @@ const ChurnPredictionPage = () => {
       impact: factor.impact * 100
     }));
 
+    // Process Journey Data for Churn Forecaster
+    const churnForecasterData = {
+      overallChurnRisk: journeyData.length > 0 
+        ? journeyData.reduce((avg, stage) => avg + stage.avgChurnRisk, 0) / journeyData.length
+        : churnData.overallChurnRisk, // Fallback to prediction data
+      
+      segmentChurnRisks: journeyData.length > 0 
+        ? journeyData.map(stage => ({
+            stage: stage.stage,
+            churnRisk: stage.avgChurnRisk,
+            userCount: stage.userCount,
+            trendDirection: stage.avgChurnRisk > 0.5 ? 'up' : 'down'
+          }))
+        : churnData.highRiskSegments.map(segment => ({
+            stage: segment.name,
+            churnRisk: segment.churnRisk,
+            userCount: segment.userCount,
+            trendDirection: segment.churnRisk > 0.5 ? 'up' : 'down'
+          })),
+      
+      interventionRecommendations: [
+        {
+          stage: 'High Risk Segments',
+          recommendations: [
+            'Personalized Engagement Campaign',
+            'Targeted Retention Offers',
+            'Proactive Customer Support'
+          ]
+        }
+      ]
+    };
+
     // Chart colors
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
   
     return (
       <Container>
-        <Typography variant="h4">Churn Prediction</Typography>
+        <Typography variant="h4">Churn Prediction & Forecasting</Typography>
         
+        {/* Existing Churn Prediction Card */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h5">
@@ -136,7 +171,68 @@ const ChurnPredictionPage = () => {
           </CardContent>
         </Card>
 
-        {/* Chart Selection Buttons */}
+        {/* Churn Risk Forecaster Accordion */}
+        <Accordion sx={{ mb: 3 }}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="churn-forecaster-content"
+            id="churn-forecaster-header"
+          >
+            <Typography variant="h6">
+              Churn Risk Forecaster 
+              <WarningIcon 
+                color={
+                  churnForecasterData.overallChurnRisk < 0.3 ? 'success' : 
+                  churnForecasterData.overallChurnRisk < 0.6 ? 'warning' : 'error'
+                }
+                sx={{ ml: 1 }}
+              />
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={2}>
+              {/* Overall Churn Risk */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1">
+                  Forecasted Overall Churn Risk: 
+                  {(churnForecasterData.overallChurnRisk * 100).toFixed(2)}%
+                </Typography>
+              </Grid>
+
+              {/* Segment Churn Risks */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1">Segment Churn Risks</Typography>
+                {churnForecasterData.segmentChurnRisks.map((segment, index) => (
+                  <Chip 
+                    key={index}
+                    icon={
+                      <TrendingDownIcon 
+                        color={segment.trendDirection === 'up' ? 'error' : 'success'}
+                      />
+                    }
+                    label={`${segment.stage}: ${(segment.churnRisk * 100).toFixed(2)}%`}
+                    variant="outlined"
+                    sx={{ m: 0.5 }}
+                  />
+                ))}
+              </Grid>
+
+              {/* Intervention Recommendations */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle1">Intervention Recommendations</Typography>
+                <List>
+                  {churnForecasterData.interventionRecommendations[0].recommendations.map((rec, index) => (
+                    <ListItem key={index}>
+                      <ListItemText primary={rec} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
+
+        {/* Existing Chart Section */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item>
             <Button 
