@@ -462,14 +462,49 @@ def create_app(config_class=Config):
 
             # Execute query and convert to list of dictionaries
             users = query.all()
-            user_data = [{
-                'username': user.username,
-                'email': user.email,
-                'age': user.age,
-                'plan': user.plan,
-                'lifetime_value': user.lifetime_value,
-                'total_sessions': user.total_sessions
-            } for user in users]
+            user_data = []
+            for user in users:
+                # Convert SQLAlchemy object to dictionary
+                user_dict = {
+                    'id': user.id,
+                    'uuid': user.uuid,
+                    'username': user.username,
+                    'email': user.email,
+                    'account_created': user.account_created.isoformat() if user.account_created else None,
+                    'last_login': user.last_login.isoformat() if user.last_login else None,
+                    'account_age_days': user.account_age_days,
+                    'age': user.age,
+                    'gender': user.gender,
+                    'location': user.location,
+                    'language': user.language,
+                    'timezone': user.timezone,
+                    'avg_visit_time': user.avg_visit_time,
+                    'total_sessions': user.total_sessions,
+                    'session_frequency': user.session_frequency,
+                    'last_email_open': user.last_email_open.isoformat() if user.last_email_open else None,
+                    'last_email_click': user.last_email_click.isoformat() if user.last_email_click else None,
+                    'email_open_rate': user.email_open_rate,
+                    'email_click_rate': user.email_click_rate,
+                    'last_app_login': user.last_app_login.isoformat() if user.last_app_login else None,
+                    'last_app_click': user.last_app_click.isoformat() if user.last_app_click else None,
+                    'last_completed_action': user.last_completed_action,
+                    'plan': user.plan,
+                    'plan_start_date': user.plan_start_date.isoformat() if user.plan_start_date else None,
+                    'lifetime_value': user.lifetime_value,
+                    'total_purchases': user.total_purchases,
+                    'average_purchase_value': user.average_purchase_value,
+                    'churn_risk': user.churn_risk,
+                    'engagement_score': user.engagement_score,
+                    'preferred_content_type': user.preferred_content_type,
+                    'communication_preference': user.communication_preference,
+                    'notification_settings': user.notification_settings,
+                    'feature_usage_json': user.feature_usage_json,
+                    'referral_source': user.referral_source,
+                    'referral_count': user.referral_count,
+                    'marketing_consent': user.marketing_consent,
+                    'last_consent_update': user.last_consent_update.isoformat() if user.last_consent_update else None
+                }
+                user_data.append(user_dict)
 
             return jsonify(user_data)
 

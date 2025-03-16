@@ -14,7 +14,14 @@ import {
     List,
     ListItem,
     ListItemText,
-    Box
+    Box,
+    TableContainer,
+    Table,
+    TableHead,
+    TableBody,
+    TableRow,
+    TableCell,
+    Paper
 } from '@mui/material';
 import { 
   PieChart, 
@@ -30,6 +37,109 @@ import {
   CartesianGrid
 } from 'recharts';
 import { fetchRawUserData } from '../../services/api';
+
+const UserDetailsModal = ({ user, open, onClose }) => {
+    if (!user) return null;
+  
+    // Exclude certain keys or format specific keys
+    const excludeKeys = ['id', 'uuid'];
+    const formatKeys = {
+      'account_created': (value) => new Date(value).toLocaleString(),
+      'last_login': (value) => value ? new Date(value).toLocaleString() : 'Never',
+      'lifetime_value': (value) => `$${value.toFixed(2)}`,
+      'churn_risk': (value) => `${(value * 100).toFixed(2)}%`,
+      'email_open_rate': (value) => `${(value * 100).toFixed(2)}%`,
+      'email_click_rate': (value) => `${(value * 100).toFixed(2)}%`,
+    };
+  
+    // Get keys, excluding specified keys
+    const userKeys = Object.keys(user)
+      .filter(key => !excludeKeys.includes(key));
+  
+    return (
+      <Dialog 
+        open={open} 
+        onClose={onClose}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogTitle>Comprehensive User Details</DialogTitle>
+        <DialogContent>
+          <Box sx={{ width: '100%', overflowX: 'auto' }}>
+            <TableContainer component={Paper}>
+              <Table sx={{ minWidth: 1200 }}>
+                <TableHead>
+                  <TableRow>
+                    {userKeys.map((key) => (
+                      <TableCell 
+                        key={key} 
+                        sx={{ 
+                          fontWeight: 'bold', 
+                          backgroundColor: '#f4f4f4',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    {userKeys.map((key) => {
+                      let value = user[key];
+                      
+                      // Apply custom formatting if exists
+                      if (formatKeys[key]) {
+                        value = formatKeys[key](value);
+                      }
+  
+                      // Handle JSON and object types
+                      if (typeof value === 'object') {
+                        value = JSON.stringify(value, null, 2);
+                      }
+  
+                      // Handle null/undefined
+                      if (value === null || value === undefined) {
+                        value = 'N/A';
+                      }
+  
+                      return (
+                        <TableCell 
+                          key={key} 
+                          sx={{ 
+                            whiteSpace: 'nowrap',
+                            maxWidth: 200,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >
+                          {String(value)}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        </DialogContent>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          p: 2 
+        }}>
+          <Button 
+            onClick={onClose} 
+            color="primary" 
+            variant="contained"
+          >
+            Close
+          </Button>
+        </Box>
+      </Dialog>
+    );
+  };
 
 const DataExplorationPage = () => {
   const [userData, setUserData] = useState(null);

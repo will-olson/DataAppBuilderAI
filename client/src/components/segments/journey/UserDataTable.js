@@ -8,277 +8,200 @@ import {
   TableRow, 
   Paper, 
   TablePagination,
-  TableSortLabel,
-  Checkbox,
-  Tooltip,
   IconButton,
-  Typography,
-  Grid,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel
+  Tooltip,
+  Typography
 } from '@mui/material';
 import { 
-  FilterList as FilterListIcon,
-  Visibility as VisibilityIcon,
-  Download as DownloadIcon
+  Visibility as VisibilityIcon
 } from '@mui/icons-material';
 
-const UserDataTable = ({ 
-  userData, 
-  onRowDetails, 
-  onExport 
-}) => {
-  // State management
+const UserDataTable = ({ userData, onRowDetails, onExport }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [selected, setSelected] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    plan: '',
-    minAge: '',
-    maxAge: '',
-    minLifetimeValue: '',
-    maxLifetimeValue: ''
-  });
-  const [sortConfig, setSortConfig] = useState({
-    key: 'lifetime_value',
-    direction: 'desc'
+  const [sortConfig, setSortConfig] = useState({ 
+    key: 'lifetime_value', 
+    direction: 'desc' 
   });
 
-  // Comprehensive filtering and sorting
-  const processedData = useMemo(() => {
-    let result = [...userData];
+  // Comprehensive columns list
+  const columns = [
+    // Core Identifiers
+    { key: 'username', label: 'Username', type: 'string' },
+    { key: 'email', label: 'Email', type: 'string' },
+    { key: 'uuid', label: 'UUID', type: 'string' },
 
-    // Filtering
-    result = result.filter(user => {
-      // Global search
-      const searchMatch = !searchTerm || 
-        Object.values(user).some(val => 
-          String(val).toLowerCase().includes(searchTerm.toLowerCase())
-        );
+    // Account Metadata
+    { key: 'account_created', label: 'Account Created', type: 'datetime' },
+    { key: 'last_login', label: 'Last Login', type: 'datetime' },
+    { key: 'account_age_days', label: 'Account Age (Days)', type: 'number' },
 
-      // Specific filters
-      const planMatch = !filters.plan || user.plan === filters.plan;
-      const ageMatch = 
-        (!filters.minAge || user.age >= Number(filters.minAge)) &&
-        (!filters.maxAge || user.age <= Number(filters.maxAge));
-      const ltvMatch = 
-        (!filters.minLifetimeValue || user.lifetime_value >= Number(filters.minLifetimeValue)) &&
-        (!filters.maxLifetimeValue || user.lifetime_value <= Number(filters.maxLifetimeValue));
+    // Demographic Insights
+    { key: 'age', label: 'Age', type: 'number' },
+    { key: 'gender', label: 'Gender', type: 'string' },
+    { key: 'location', label: 'Location', type: 'string' },
+    { key: 'language', label: 'Language', type: 'string' },
+    { key: 'timezone', label: 'Timezone', type: 'string' },
 
-      return searchMatch && planMatch && ageMatch && ltvMatch;
-    });
+    // Engagement Metrics
+    { key: 'avg_visit_time', label: 'Avg Visit Time', type: 'number' },
+    { key: 'total_sessions', label: 'Total Sessions', type: 'number' },
+    { key: 'session_frequency', label: 'Session Frequency', type: 'number' },
 
-    // Sorting
-    result.sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
+    // Communication Engagement
+    { key: 'last_email_open', label: 'Last Email Open', type: 'datetime' },
+    { key: 'last_email_click', label: 'Last Email Click', type: 'datetime' },
+    { key: 'email_open_rate', label: 'Email Open Rate', type: 'percentage' },
+    { key: 'email_click_rate', label: 'Email Click Rate', type: 'percentage' },
+
+    // Product Interaction
+    { key: 'last_app_login', label: 'Last App Login', type: 'datetime' },
+    { key: 'last_app_click', label: 'Last App Click', type: 'datetime' },
+    { key: 'last_completed_action', label: 'Last Completed Action', type: 'string' },
+
+    // Conversion & Revenue Metrics
+    { key: 'plan', label: 'Plan', type: 'string' },
+    { key: 'plan_start_date', label: 'Plan Start Date', type: 'datetime' },
+    { key: 'lifetime_value', label: 'Lifetime Value', type: 'currency' },
+    { key: 'total_purchases', label: 'Total Purchases', type: 'number' },
+    { key: 'average_purchase_value', label: 'Avg Purchase Value', type: 'currency' },
+
+    // Retention Indicators
+    { key: 'churn_risk', label: 'Churn Risk', type: 'percentage' },
+    { key: 'engagement_score', label: 'Engagement Score', type: 'percentage' },
+
+    // Personalization Attributes
+    { key: 'preferred_content_type', label: 'Content Preference', type: 'string' },
+    { key: 'communication_preference', label: 'Communication Preference', type: 'string' },
+    { key: 'notification_settings', label: 'Notification Settings', type: 'json' },
+
+    // Feature Usage
+    { key: 'feature_usage_json', label: 'Feature Usage', type: 'json' },
+
+    // Referral & Growth
+    { key: 'referral_source', label: 'Referral Source', type: 'string' },
+    { key: 'referral_count', label: 'Referral Count', type: 'number' },
+
+    // Compliance & Privacy
+    { key: 'marketing_consent', label: 'Marketing Consent', type: 'boolean' },
+    { key: 'last_consent_update', label: 'Last Consent Update', type: 'datetime' }
+  ];
+
+  // Formatting helper
+  const formatValue = (key, value, type) => {
+    if (value === null || value === undefined) return 'N/A';
+
+    switch (type) {
+      case 'datetime':
+        return value ? new Date(value).toLocaleString() : 'Never';
+      
+      case 'currency':
+        return `$${parseFloat(value).toFixed(2)}`;
+      
+      case 'percentage':
+        return `${(parseFloat(value) * 100).toFixed(2)}%`;
+      
+      case 'number':
+        return parseFloat(value).toFixed(2);
+      
+      case 'boolean':
+        return value ? 'Yes' : 'No';
+      
+      case 'json':
+        return typeof value === 'object' 
+          ? JSON.stringify(value, null, 2) 
+          : value;
+      
+      default:
+        return String(value);
+    }
+  };
+
+  // Sorting function
+  const sortedData = useMemo(() => {
+    if (!userData) return [];
+
+    return [...userData].sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === bValue) return 0;
+      
+      if (sortConfig.direction === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
       }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
     });
-
-    return result;
-  }, [userData, searchTerm, filters, sortConfig]);
+  }, [userData, sortConfig]);
 
   // Pagination
-  const paginatedData = processedData.slice(
-    page * rowsPerPage, 
-    page * rowsPerPage + rowsPerPage
-  );
-
-  // Selection handlers
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const newSelecteds = paginatedData.map((n) => n.id);
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (event, id) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1)
-      );
-    }
-
-    setSelected(newSelected);
-  };
-
-  // Export handler
-  const handleExport = () => {
-    const selectedUsers = userData.filter(user => selected.includes(user.id));
-    onExport(selectedUsers);
-  };
+  const paginatedData = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    return sortedData.slice(startIndex, startIndex + rowsPerPage);
+  }, [sortedData, page, rowsPerPage]);
 
   return (
     <Paper>
-      {/* Filtering and Search Section */}
-      <Grid container spacing={2} sx={{ p: 2 }}>
-        <Grid item xs={12} md={4}>
-          <TextField
-            fullWidth
-            label="Search Users"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            variant="outlined"
-          />
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth>
-            <InputLabel>Plan</InputLabel>
-            <Select
-              value={filters.plan}
-              label="Plan"
-              onChange={(e) => setFilters(prev => ({
-                ...prev, 
-                plan: e.target.value
-              }))}
-            >
-              <MenuItem value="">All Plans</MenuItem>
-              <MenuItem value="basic">Basic</MenuItem>
-              <MenuItem value="plus">Plus</MenuItem>
-              <MenuItem value="premium">Premium</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <TextField
-            fullWidth
-            label="Min Age"
-            type="number"
-            value={filters.minAge}
-            onChange={(e) => setFilters(prev => ({
-              ...prev, 
-              minAge: e.target.value
-            }))}
-          />
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <TextField
-            fullWidth
-            label="Max Age"
-            type="number"
-            value={filters.maxAge}
-            onChange={(e) => setFilters(prev => ({
-              ...prev, 
-              maxAge: e.target.value
-            }))}
-          />
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Tooltip title="Export Selected Users">
-            <IconButton 
-              color="primary" 
-              onClick={handleExport}
-              disabled={selected.length === 0}
-            >
-              <DownloadIcon />
-            </IconButton>
-          </Tooltip>
-        </Grid>
-      </Grid>
-
-      {/* Data Table */}
-      <TableContainer>
-        <Table>
+      <TableContainer sx={{ maxHeight: 600, overflow: 'auto' }}>
+        <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selected.length > 0 && selected.length < paginatedData.length}
-                  checked={paginatedData.length > 0 && selected.length === paginatedData.length}
-                  onChange={handleSelectAllClick}
-                />
-              </TableCell>
-              {[
-                { key: 'username', label: 'Username' },
-                { key: 'email', label: 'Email' },
-                { key: 'age', label: 'Age' },
-                { key: 'plan', label: 'Plan' },
-                { key: 'lifetime_value', label: 'Lifetime Value' },
-                { key: 'total_sessions', label: 'Total Sessions' }
-              ].map((column) => (
+              {columns.map((column) => (
                 <TableCell 
                   key={column.key}
-                  sortDirection={sortConfig.key === column.key ? sortConfig.direction : false}
+                  onClick={() => setSortConfig(prev => ({
+                    key: column.key,
+                    direction: prev.key === column.key && prev.direction === 'desc' ? 'asc' : 'desc'
+                  }))}
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
                 >
-                  <TableSortLabel
-                    active={sortConfig.key === column.key}
-                    direction={sortConfig.key === column.key ? sortConfig.direction : 'asc'}
-                    onClick={() => setSortConfig(prev => ({
-                      key: column.key,
-                      direction: prev.key === column.key && prev.direction === 'desc' ? 'asc' : 'desc'
-                    }))}
-                  >
-                    {column.label}
-                  </TableSortLabel>
+                  {column.label}
+                  {sortConfig.key === column.key && 
+                    (sortConfig.direction === 'asc' ? ' ▲' : ' ▼')}
                 </TableCell>
               ))}
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedData.map((user) => {
-              const isItemSelected = selected.indexOf(user.id) !== -1;
-
-              return (
-                <TableRow 
-                  hover
-                  role="checkbox"
-                  aria-checked={isItemSelected}
-                  tabIndex={-1}
-                  key={user.id}
-                  selected={isItemSelected}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isItemSelected}
-                      onClick={(event) => handleClick(event, user.id)}
-                    />
+            {paginatedData.map((user, index) => (
+              <TableRow key={index}>
+                {columns.map((column) => (
+                  <TableCell 
+                    key={column.key}
+                    sx={{ 
+                      whiteSpace: 'nowrap',
+                      maxWidth: 200,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {formatValue(column.key, user[column.key], column.type)}
                   </TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.age}</TableCell>
-                  <TableCell>{user.plan}</TableCell>
-                  <TableCell>${user.lifetime_value.toFixed(2)}</TableCell>
-                  <TableCell>{user.total_sessions}</TableCell>
-                  <TableCell>
-                    <Tooltip title="View Details">
-                      <IconButton onClick={() => onRowDetails(user)}>
-                        <VisibilityIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                ))}
+                <TableCell>
+                  <Tooltip title="View Details">
+                    <IconButton onClick={() => onRowDetails(user)}>
+                      <VisibilityIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
 
       {/* Pagination */}
       <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
+        rowsPerPageOptions={[10, 25, 50, 100]}
         component="div"
-        count={processedData.length}
+        count={sortedData.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={(event, newPage) => setPage(newPage)}
@@ -287,12 +210,6 @@ const UserDataTable = ({
           setPage(0);
         }}
       />
-
-      {/* Results Summary */}
-      <Typography variant="body2" sx={{ p: 2 }}>
-        Showing {paginatedData.length} of {processedData.length} users
-        {selected.length > 0 && ` (${selected.length} selected)`}
-      </Typography>
     </Paper>
   );
 };
