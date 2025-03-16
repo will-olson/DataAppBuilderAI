@@ -24,6 +24,8 @@ import {
   Search as SearchIcon,
   ImportExport as ExportIcon
 } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const formatValue = (key, value, type) => {
     if (value === null || value === undefined) return 'N/A';
@@ -54,6 +56,40 @@ const formatValue = (key, value, type) => {
     }
   };
 
+// Add these utility export functions before the UserDataTable component
+const exportToCSV = (data, filename = 'export.csv') => {
+    if (data.length === 0) return;
+  
+    // Extract headers and rows
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => 
+        headers.map(header => 
+          `"${String(row[header]).replace(/"/g, '""')}"` // Escape quotes
+        ).join(',')
+      )
+    ].join('\n');
+  
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, filename);
+  };
+  
+  const exportToJSON = (data, filename = 'export.json') => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { 
+      type: 'application/json;charset=utf-8;' 
+    });
+    saveAs(blob, filename);
+  };
+  
+  const exportToExcel = (data, filename = 'export.xlsx') => {
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+    XLSX.writeFile(workbook, filename);
+  };
+
 const UserDataTable = ({ 
   userData, 
   onRowDetails, 
@@ -71,6 +107,7 @@ const UserDataTable = ({
   const [visibleColumns, setVisibleColumns] = useState({});
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [filters, setFilters] = useState({});
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
 
   // Comprehensive columns list
   const columns = [
@@ -189,39 +226,49 @@ const UserDataTable = ({
     return sortedData.slice(startIndex, startIndex + rowsPerPage);
   }, [sortedData, page, rowsPerPage]);
 
-  // Export Handler
-  const handleExport = useCallback((format) => {
-    if (onExport) {
-      onExport(sortedData, format);
-    } else {
-      // Default export logic
-      const exportData = sortedData.map(user => 
-        Object.fromEntries(
-          Object.entries(user).filter(([key]) => visibleColumns[key])
-        )
-      );
+    // Modify the export handler
+    const handleExport = useCallback((format) => {
+        // Close export menu
+        setExportAnchorEl(null);
 
-      switch(format) {
-        case 'CSV':
-          exportToCSV(exportData);
-          break;
-        case 'JSON':
-          exportToJSON(exportData);
-          break;
-        case 'Excel':
-          exportToExcel(exportData);
-          break;
-      }
+        // If custom export handler is provided, use it
+        if (onExport) {
+        onExport(sortedData, format);
+        return;
+        }
+    
+    // Default export logic
+    const exportData = sortedData.map(user => 
+      Object.fromEntries(
+        Object.entries(user)
+          .filter(([key]) => visibleColumns[key])
+          .map(([key, value]) => [key, formatValue(key, value, columns.find(c => c.key === key)?.type)])
+      )
+    );
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `user_export_${timestamp}`;
+
+    switch(format) {
+      case 'CSV':
+        exportToCSV(exportData, `${filename}.csv`);
+        break;
+      case 'JSON':
+        exportToJSON(exportData, `${filename}.json`);
+        break;
+      case 'Excel':
+        exportToExcel(exportData, `${filename}.xlsx`);
+        break;
     }
-  }, [sortedData, visibleColumns, onExport]);
+  }, [sortedData, visibleColumns, onExport, columns]);
 
-  // Column Visibility Toggle
-  const toggleColumnVisibility = (columnKey) => {
-    setVisibleColumns(prev => ({
-      ...prev,
-      [columnKey]: !prev[columnKey]
-    }));
-  };
+    // Column Visibility Toggle
+    const toggleColumnVisibility = (columnKey) => {
+        setVisibleColumns(prev => ({
+        ...prev,
+        [columnKey]: !prev[columnKey]
+        }));
+    };
 
   return (
     <Paper>
@@ -274,19 +321,28 @@ const UserDataTable = ({
             ))}
           </Menu>
 
-          {/* Export Dropdown */}
-          <Button 
-            startIcon={<ExportIcon />}
-            variant="outlined"
-            onClick={(e) => {
-              const menu = document.createElement('div');
-              menu.innerHTML = exportFormats.map(format => 
-                `<div onclick="handleExport('${format}')">${format}</div>`
-              ).join('');
-            }}
-          >
-            Export
-          </Button>
+            {/* Export Dropdown */}
+            <Button 
+                startIcon={<ExportIcon />}
+                variant="outlined"
+                onClick={(e) => setExportAnchorEl(e.currentTarget)}
+            >
+                Export
+            </Button>
+            <Menu
+                anchorEl={exportAnchorEl}
+                open={Boolean(exportAnchorEl)}
+                onClose={() => setExportAnchorEl(null)}
+            >
+                {exportFormats.map((format) => (
+                <MenuItem 
+                    key={format} 
+                    onClick={() => handleExport(format)}
+                >
+                    Export as {format}
+                </MenuItem>
+                ))}
+            </Menu>
         </Box>
       </Box>
 
@@ -364,19 +420,6 @@ const UserDataTable = ({
       />
     </Paper>
   );
-};
-
-// Utility Export Functions (to be implemented)
-const exportToCSV = (data) => {
-  // CSV export logic
-};
-
-const exportToJSON = (data) => {
-  // JSON export logic
-};
-
-const exportToExcel = (data) => {
-  // Excel export logic
 };
 
 export default UserDataTable;
