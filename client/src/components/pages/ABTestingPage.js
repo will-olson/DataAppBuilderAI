@@ -23,12 +23,11 @@ import {
   Legend
 } from 'recharts';
 
-// Import the correct service method
 import { fetchAIInsights } from '../../services/api';
 
 const ABTestingPage = () => {
   const [testResults, setTestResults] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const runABTestAnalysis = async () => {
@@ -36,37 +35,25 @@ const ABTestingPage = () => {
     setError(null);
     
     try {
-      console.log('Fetching AB Testing Analysis...');
-      
-      // Use the correct service method
       const data = await fetchAIInsights.getABTestingAnalysis();
       
-      console.log('AB Testing Analysis Results:', data);
+      console.log('Received AB Testing Insights:', data);
       
       // Validate data structure
-      if (!data || !data.insights) {
-        throw new Error('Invalid or incomplete AB testing data');
+      if (!data.insights) {
+        throw new Error('Invalid AB testing data structure');
       }
       
-      // Parse insights if they're in a string format
-      const parsedInsights = typeof data.insights === 'string' 
-        ? JSON.parse(data.insights) 
-        : data.insights;
-      
-      setTestResults(parsedInsights);
+      setTestResults(data);
     } catch (error) {
-      console.error('Detailed AB Testing Analysis Error:', {
-        message: error.message,
-        stack: error.stack
-      });
+      console.error('AB Testing Insights Generation Error:', error);
       
-      // Provide more informative error messages
-      const errorMessage = 
-        error.message.includes('fetch') 
-          ? 'Network error. Please check your connection.' 
-          : error.message || 'Failed to run AB testing analysis. Please try again.';
-      
-      setError(errorMessage);
+      // Provide user-friendly error message
+      setError(
+        error.message.includes('fetch')
+          ? 'Network error. Please check your connection.'
+          : error.message || 'Failed to run AB testing analysis. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -118,7 +105,7 @@ const ABTestingPage = () => {
     );
   }
 
-  // No data state
+  // No results state
   if (!testResults) {
     return (
       <Container>
@@ -136,7 +123,7 @@ const ABTestingPage = () => {
       </Typography>
       
       {/* Experimental Design Insights */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={6}>
           <Card elevation={3}>
             <CardContent>
@@ -190,14 +177,6 @@ const ABTestingPage = () => {
                     secondary={testResults.recommended_variant || 'No recommendation'}
                   />
                 </ListItem>
-                {testResults.variant_performance && (
-                  <ListItem>
-                    <ListItemText 
-                      primary="Variant Performance" 
-                      secondary={JSON.stringify(testResults.variant_performance, null, 2)}
-                    />
-                  </ListItem>
-                )}
               </List>
             </CardContent>
           </Card>
@@ -206,7 +185,7 @@ const ABTestingPage = () => {
 
       {/* Detailed Insights */}
       {testResults.insights && (
-        <Card sx={{ mt: 3 }} elevation={3}>
+        <Card elevation={3}>
           <CardContent>
             <Typography variant="h5" gutterBottom>
               Detailed A/B Testing Insights
