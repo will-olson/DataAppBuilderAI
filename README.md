@@ -1,7 +1,7 @@
 # 🚀 Growth Marketing AI Platform
 
 ## 📝 Overview
-An advanced marketing intelligence platform that transforms raw user data into actionable, AI-powered strategic insights. Leveraging a sophisticated 21,000-user database and OpenAI's GPT technology, the platform provides comprehensive analytics, predictive modeling, and personalized engagement strategies that redefine data-driven marketing.
+An advanced marketing intelligence platform that transforms raw user data into actionable, AI-powered strategic insights. Leveraging a sophisticated 31,000-user database and OpenAI's GPT technology, the platform provides comprehensive analytics, predictive modeling, and personalized engagement strategies that redefine data-driven marketing.
 
 ---
 
@@ -137,7 +137,7 @@ flask run
 ## 📈 Performance Metrics
 
 ### **Key Statistics**
-- **Total Users:** 21,000
+- **Total Users:** 31,000
 - **Data Points per User:** 40+
 - **Insight Generation:** Real-time
 - **AI Model:** GPT-4
