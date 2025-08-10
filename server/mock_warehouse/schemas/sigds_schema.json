@@ -1,0 +1,440 @@
+{
+  "sigma_input_tables": {
+    "description": "Sigma-compatible input tables for data ingestion",
+    "columns": [
+      {
+        "name": "id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": false,
+        "primary_key": true,
+        "description": "Unique identifier for the input table"
+      },
+      {
+        "name": "type",
+        "type": "VARCHAR",
+        "length": 50,
+        "nullable": false,
+        "description": "Type of input table (empty, csv, api, database)"
+      },
+      {
+        "name": "columns",
+        "type": "JSON",
+        "nullable": false,
+        "description": "Column definitions for the input table"
+      },
+      {
+        "name": "validation_rules",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Data validation rules for the table"
+      },
+      {
+        "name": "governance_config",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Data governance configuration"
+      },
+      {
+        "name": "metadata",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Additional metadata for the table"
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the table was created"
+      },
+      {
+        "name": "updated_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the table was last updated"
+      },
+      {
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "nullable": false,
+        "default": "active",
+        "description": "Current status of the table"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_input_tables_type",
+        "columns": ["type"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_input_tables_status",
+        "columns": ["status"],
+        "type": "btree"
+      }
+    ]
+  },
+  "sigma_layout_elements": {
+    "description": "Sigma-compatible layout elements for UI components",
+    "columns": [
+      {
+        "name": "id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": false,
+        "primary_key": true,
+        "description": "Unique identifier for the layout element"
+      },
+      {
+        "name": "type",
+        "type": "VARCHAR",
+        "length": 50,
+        "nullable": false,
+        "description": "Type of layout element (container, modal, tabs, form, chart)"
+      },
+      {
+        "name": "name",
+        "type": "VARCHAR",
+        "length": 100,
+        "nullable": false,
+        "description": "Human-readable name for the element"
+      },
+      {
+        "name": "config",
+        "type": "JSON",
+        "nullable": false,
+        "description": "Configuration for the layout element"
+      },
+      {
+        "name": "parent_id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": true,
+        "description": "Parent element ID for nested elements"
+      },
+      {
+        "name": "nesting_level",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": 0,
+        "description": "Nesting level in the element hierarchy"
+      },
+      {
+        "name": "metadata",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Additional metadata for the element"
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the element was created"
+      },
+      {
+        "name": "updated_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the element was last updated"
+      },
+      {
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "nullable": false,
+        "default": "active",
+        "description": "Current status of the element"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_layout_elements_type",
+        "columns": ["type"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_layout_elements_parent",
+        "columns": ["parent_id"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_layout_elements_status",
+        "columns": ["status"],
+        "type": "btree"
+      }
+    ]
+  },
+  "sigma_actions": {
+    "description": "Sigma-compatible actions for user interactions",
+    "columns": [
+      {
+        "name": "id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": false,
+        "primary_key": true,
+        "description": "Unique identifier for the action"
+      },
+      {
+        "name": "type",
+        "type": "VARCHAR",
+        "length": 50,
+        "nullable": false,
+        "description": "Type of action (navigation, data_operation, ui_interaction, api_call, custom)"
+      },
+      {
+        "name": "parameters",
+        "type": "JSON",
+        "nullable": false,
+        "description": "Parameters for the action execution"
+      },
+      {
+        "name": "conditions",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Conditions that must be met for action execution"
+      },
+      {
+        "name": "description",
+        "type": "VARCHAR",
+        "length": 255,
+        "nullable": true,
+        "description": "Human-readable description of the action"
+      },
+      {
+        "name": "metadata",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Additional metadata for the action"
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the action was created"
+      },
+      {
+        "name": "updated_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the action was last updated"
+      },
+      {
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "nullable": false,
+        "default": "active",
+        "description": "Current status of the action"
+      },
+      {
+        "name": "execution_count",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": 0,
+        "description": "Number of times the action has been executed"
+      },
+      {
+        "name": "last_executed",
+        "type": "TIMESTAMP",
+        "nullable": true,
+        "description": "Timestamp when the action was last executed"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_actions_type",
+        "columns": ["type"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_actions_status",
+        "columns": ["status"],
+        "type": "btree"
+      }
+    ]
+  },
+  "sigma_action_sequences": {
+    "description": "Sigma-compatible action sequences for complex workflows",
+    "columns": [
+      {
+        "name": "id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": false,
+        "primary_key": true,
+        "description": "Unique identifier for the action sequence"
+      },
+      {
+        "name": "name",
+        "type": "VARCHAR",
+        "length": 100,
+        "nullable": false,
+        "description": "Human-readable name for the sequence"
+      },
+      {
+        "name": "trigger",
+        "type": "JSON",
+        "nullable": false,
+        "description": "Trigger configuration for the sequence"
+      },
+      {
+        "name": "actions",
+        "type": "JSON",
+        "nullable": false,
+        "description": "Ordered list of action IDs to execute"
+      },
+      {
+        "name": "execution_config",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Execution configuration (continue_on_failure, timeout, etc.)"
+      },
+      {
+        "name": "metadata",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Additional metadata for the sequence"
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the sequence was created"
+      },
+      {
+        "name": "updated_at",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when the sequence was last updated"
+      },
+      {
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "nullable": false,
+        "default": "active",
+        "description": "Current status of the sequence"
+      },
+      {
+        "name": "execution_count",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": 0,
+        "description": "Number of times the sequence has been executed"
+      },
+      {
+        "name": "last_executed",
+        "type": "TIMESTAMP",
+        "nullable": true,
+        "description": "Timestamp when the sequence was last executed"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_action_sequences_name",
+        "columns": ["name"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_action_sequences_status",
+        "columns": ["status"],
+        "type": "btree"
+      }
+    ]
+  },
+  "sigma_execution_history": {
+    "description": "History of action and sequence executions",
+    "columns": [
+      {
+        "name": "execution_id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": false,
+        "primary_key": true,
+        "description": "Unique identifier for the execution"
+      },
+      {
+        "name": "action_id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": true,
+        "description": "ID of the executed action (if applicable)"
+      },
+      {
+        "name": "sequence_id",
+        "type": "VARCHAR",
+        "length": 36,
+        "nullable": true,
+        "description": "ID of the executed sequence (if applicable)"
+      },
+      {
+        "name": "action_type",
+        "type": "VARCHAR",
+        "length": 50,
+        "nullable": false,
+        "description": "Type of action that was executed"
+      },
+      {
+        "name": "start_time",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when execution started"
+      },
+      {
+        "name": "end_time",
+        "type": "TIMESTAMP",
+        "nullable": false,
+        "description": "Timestamp when execution completed"
+      },
+      {
+        "name": "context",
+        "type": "JSON",
+        "nullable": true,
+        "description": "Context data at execution time"
+      },
+      {
+        "name": "result",
+        "type": "JSON",
+        "nullable": false,
+        "description": "Result of the execution"
+      },
+      {
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "nullable": false,
+        "description": "Execution status (success, failed, cancelled)"
+      },
+      {
+        "name": "error_message",
+        "type": "TEXT",
+        "nullable": true,
+        "description": "Error message if execution failed"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_execution_history_action",
+        "columns": ["action_id"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_execution_history_sequence",
+        "columns": ["sequence_id"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_execution_history_status",
+        "columns": ["status"],
+        "type": "btree"
+      },
+      {
+        "name": "idx_execution_history_start_time",
+        "columns": ["start_time"],
+        "type": "btree"
+      }
+    ]
+  }
+} 

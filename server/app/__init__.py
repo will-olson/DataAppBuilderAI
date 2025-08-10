@@ -158,6 +158,19 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
     
+    # Initialize Sigma Framework Integration if enabled
+    try:
+        if app.config.get('SIGMA_MODE', 'standalone') != 'standalone':
+            from sigma_integration import init_sigma_integration
+            sigma_integration = init_sigma_integration(app)
+            app.sigma_integration = sigma_integration
+            app.logger.info(f"Sigma framework integration initialized in {app.config.get('SIGMA_MODE')} mode")
+        else:
+            app.logger.info("Sigma framework integration disabled (standalone mode)")
+    except Exception as e:
+        app.logger.warning(f"Sigma framework integration failed: {e}")
+        app.logger.info("Continuing in standalone mode")
+    
     # API Routes
     @app.route('/api/segments', methods=['GET'])
     def get_user_segments():
