@@ -12,8 +12,12 @@ logger = logging.getLogger(__name__)
 class MockWarehouseAdapter(DatabaseAdapter):
     """Mock warehouse for testing Sigma compatibility"""
     
-    def __init__(self, data_path: str = 'server/mock_warehouse/data'):
-        self.data_path = data_path
+    def __init__(self, config: Dict = None):
+        if config is None:
+            config = {}
+        
+        # Extract data path from config or use default
+        self.data_path = config.get('MOCK_WAREHOUSE_DATA_PATH', 'server/mock_warehouse/data')
         self.features = ['warehouse_sql', 'json_support', 'sigds_schema', 'real_time', 'ai_functions']
         self.tables = {}
         self._load_mock_data()

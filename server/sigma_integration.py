@@ -208,6 +208,25 @@ class SigmaIntegration:
         
         logger.info("Sigma routes registered successfully")
     
+    def update_config(self, new_config):
+        """Update configuration without re-registering routes"""
+        try:
+            # Update the Flask app configuration
+            if hasattr(self.app, 'config'):
+                self.app.config['SIGMA_MODE'] = new_config.get('sigma_mode', 'standalone')
+                self.app.config['DATABASE_MODE'] = new_config.get('database_mode', 'sqlite')
+                self.app.config['SIGMA_FEATURES'] = new_config.get('features', {})
+            
+            # Reinitialize components with new configuration
+            # This is safe now since routes are already registered
+            self._init_sigma_layer()
+            self._init_database_adapter()
+            
+            logger.info(f"Sigma integration configuration updated successfully")
+        except Exception as e:
+            logger.error(f"Failed to update Sigma integration configuration: {e}")
+            raise
+    
     def get_sigma_status(self) -> Dict[str, Any]:
         """Get current Sigma integration status"""
         return {
@@ -228,5 +247,5 @@ sigma_integration = SigmaIntegration()
 
 def init_sigma_integration(app):
     """Initialize Sigma integration with Flask app"""
-    sigma_integration.init_app(app)
-    return sigma_integration 
+    integration = SigmaIntegration(app)
+    return integration 

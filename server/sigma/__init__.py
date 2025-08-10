@@ -76,17 +76,30 @@ def create_sigma_layer(config):
     """Create Sigma compatibility layer based on configuration"""
     
     try:
-        if config['SIGMA_MODE'] == 'standalone':
+        # Handle different config object types
+        if hasattr(config, 'get'):
+            # Flask config object or dict-like object
+            sigma_mode = config.get('SIGMA_MODE', 'standalone')
+        elif hasattr(config, 'SIGMA_MODE'):
+            # Config class object
+            sigma_mode = config.SIGMA_MODE
+        else:
+            # Fallback to standalone mode
+            logger.warning(f"Unknown config object type: {type(config)}, falling back to standalone mode")
             return SigmaCompatibilityLayer(enabled=False, mode='standalone')
         
-        elif config['SIGMA_MODE'] == 'mock_warehouse':
+        if sigma_mode == 'standalone':
+            return SigmaCompatibilityLayer(enabled=False, mode='standalone')
+        
+        elif sigma_mode == 'mock_warehouse':
             return SigmaCompatibilityLayer(enabled=True, mode='mock_warehouse')
         
-        elif config['SIGMA_MODE'] == 'sigma':
+        elif sigma_mode == 'sigma':
             return SigmaCompatibilityLayer(enabled=True, mode='sigma')
         
         else:
-            raise ValueError(f"Unsupported Sigma mode: {config['SIGMA_MODE']}")
+            logger.warning(f"Unsupported Sigma mode: {sigma_mode}, falling back to standalone mode")
+            return SigmaCompatibilityLayer(enabled=False, mode='standalone')
     
     except Exception as e:
         logger.error(f"Failed to create Sigma layer: {e}")

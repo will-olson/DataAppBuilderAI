@@ -38,17 +38,18 @@ def create_app(config_class=None):
     
     # Initialize Sigma Framework if enabled
     sigma_integration = None
-    if app.config.get('SIGMA_MODE', 'standalone') != 'standalone':
-        try:
-            from sigma_integration import init_sigma_integration
-            sigma_integration = init_sigma_integration(app)
-            app.sigma_integration = sigma_integration
+    try:
+        from sigma_integration import init_sigma_integration
+        # Always initialize Sigma integration to register routes, but it may be disabled
+        sigma_integration = init_sigma_integration(app)
+        app.sigma_integration = sigma_integration
+        if app.config.get('SIGMA_MODE', 'standalone') != 'standalone':
             logger.info(f"Sigma framework integration initialized in {app.config.get('SIGMA_MODE')} mode")
-        except Exception as e:
-            logger.warning(f"Sigma framework integration failed: {e}")
-            logger.info("Continuing in standalone mode")
-    else:
-        logger.info("Sigma framework integration disabled (standalone mode)")
+        else:
+            logger.info("Sigma framework integration initialized but disabled (standalone mode)")
+    except Exception as e:
+        logger.warning(f"Sigma framework integration failed: {e}")
+        logger.info("Continuing in standalone mode")
     
     # Register Sigma mode toggle endpoint (frontend can call this)
     @app.route('/api/sigma/toggle-mode', methods=['POST'])
@@ -62,15 +63,25 @@ def create_app(config_class=None):
             new_mode = data['mode']
             updated_config = update_sigma_mode(new_mode)
             
-            # Reinitialize Sigma integration if needed
-            if new_mode != 'standalone':
+            # Update Flask app configuration to reflect the new mode
+            app.config['SIGMA_MODE'] = updated_config['sigma_mode']
+            app.config['DATABASE_MODE'] = updated_config['database_mode']
+            app.config['SIGMA_FEATURES'] = updated_config['features']
+            
+            # Instead of reinitializing the entire integration, just update the existing one
+            if hasattr(app, 'sigma_integration') and app.sigma_integration:
+                # Update the existing integration's configuration
+                app.sigma_integration.update_config(updated_config)
+                logger.info(f"Sigma framework configuration updated to {new_mode} mode")
+            elif new_mode != 'standalone':
+                # Only initialize if it doesn't exist and we're not going to standalone
                 try:
                     from sigma_integration import init_sigma_integration
                     sigma_integration = init_sigma_integration(app)
                     app.sigma_integration = sigma_integration
-                    logger.info(f"Sigma framework reinitialized in {new_mode} mode")
+                    logger.info(f"Sigma framework initialized in {new_mode} mode")
                 except Exception as e:
-                    logger.error(f"Failed to reinitialize Sigma framework: {e}")
+                    logger.error(f"Failed to initialize Sigma framework: {e}")
                     return jsonify({'error': f'Failed to initialize Sigma framework: {e}'}), 500
             else:
                 # Remove Sigma integration
@@ -101,223 +112,8 @@ def create_app(config_class=None):
             'sigma_enabled': hasattr(app, 'sigma_integration')
         })
     
-    # Sigma Framework Status (stub endpoint for standalone mode)
-    @app.route('/api/sigma/status', methods=['GET'])
-    def get_sigma_status():
-        """Get Sigma framework status"""
-        if hasattr(app, 'sigma_integration') and app.sigma_integration:
-            # Use real Sigma integration if available
-            try:
-                return app.sigma_integration.get_sigma_status()
-            except Exception as e:
-                logger.error(f"Error getting Sigma status: {e}")
-                return jsonify({'error': str(e)}), 500
-        else:
-            # Provide stub data for standalone mode
-            return jsonify({
-                'sigma_mode': 'standalone',
-                'database_mode': 'sqlite',
-                'sigma_layer': {
-                    'mode': 'standalone',
-                    'status': 'active',
-                    'version': '1.0.0'
-                },
-                'database_adapter': {
-                    'type': 'sqlite',
-                    'status': 'healthy',
-                    'features': ['basic_analytics', 'user_segments', 'churn_prediction']
-                }
-            })
-    
-    # Sigma Framework Capabilities (stub endpoint for standalone mode)
-    @app.route('/api/sigma/capabilities', methods=['GET'])
-    def get_sigma_capabilities():
-        """Get Sigma framework capabilities"""
-        if hasattr(app, 'sigma_integration') and app.sigma_integration:
-            # Use real Sigma integration if available
-            try:
-                return app.sigma_integration.get_sigma_capabilities()
-            except Exception as e:
-                logger.error(f"Error getting Sigma capabilities: {e}")
-                return jsonify({'error': str(e)}), 500
-        else:
-            # Provide stub data for standalone mode
-            return jsonify({
-                'input_tables': ['users', 'sessions', 'transactions', 'events'],
-                'layout_elements': ['charts', 'tables', 'filters', 'dashboards'],
-                'actions': ['export_data', 'schedule_report', 'send_alert'],
-                'data_governance': ['access_control', 'audit_logs', 'data_quality'],
-                'real_time_sync': False
-            })
-    
-    # Sigma Input Tables (stub endpoint for standalone mode)
-    @app.route('/api/sigma/input-tables', methods=['GET'])
-    def get_sigma_input_tables():
-        """Get Sigma input tables"""
-        if hasattr(app, 'sigma_integration') and app.sigma_integration:
-            # Use real Sigma integration if available
-            try:
-                return app.sigma_integration.get_input_tables()
-            except Exception as e:
-                logger.error(f"Error getting input tables: {e}")
-                return jsonify({'error': str(e)}), 500
-        else:
-            # Provide stub data for standalone mode
-            return jsonify({
-                'status': 'success',
-                'data': [
-                    {
-                        'name': 'users',
-                        'description': 'User profile and demographic data',
-                        'columns': ['id', 'username', 'email', 'age', 'plan', 'lifetime_value'],
-                        'row_count': 1000,
-                        'last_updated': '2024-01-15T10:00:00Z'
-                    },
-                    {
-                        'name': 'sessions',
-                        'description': 'User session and activity data',
-                        'columns': ['id', 'user_id', 'start_time', 'end_time', 'duration', 'pages_visited'],
-                        'row_count': 5000,
-                        'last_updated': '2024-01-15T10:00:00Z'
-                    },
-                    {
-                        'name': 'transactions',
-                        'description': 'User transaction and revenue data',
-                        'columns': ['id', 'user_id', 'amount', 'date', 'type', 'status'],
-                        'row_count': 2500,
-                        'last_updated': '2024-01-15T10:00:00Z'
-                    }
-                ]
-            })
-    
-    # Sigma Layout Elements (stub endpoint for standalone mode)
-    @app.route('/api/sigma/layout-elements', methods=['GET'])
-    def get_sigma_layout_elements():
-        """Get Sigma layout elements"""
-        if hasattr(app, 'sigma_integration') and app.sigma_integration:
-            # Use real Sigma integration if available
-            try:
-                return app.sigma_integration.get_layout_elements()
-            except Exception as e:
-                logger.error(f"Error getting layout elements: {e}")
-                return jsonify({'error': str(e)}), 500
-        else:
-            # Provide stub data for standalone mode
-            return jsonify({
-                'status': 'success',
-                'data': [
-                    {
-                        'id': 'chart_1',
-                        'type': 'bar_chart',
-                        'title': 'User Segments',
-                        'config': {
-                            'data_source': 'users',
-                            'x_axis': 'segment',
-                            'y_axis': 'count',
-                            'colors': ['#0088FE', '#00C49F', '#FFBB28']
-                        }
-                    },
-                    {
-                        'id': 'table_1',
-                        'type': 'data_table',
-                        'title': 'User Details',
-                        'config': {
-                            'data_source': 'users',
-                            'columns': ['username', 'email', 'plan', 'lifetime_value'],
-                            'pagination': True,
-                            'sortable': True
-                        }
-                    },
-                    {
-                        'id': 'filter_1',
-                        'type': 'dropdown_filter',
-                        'title': 'Plan Filter',
-                        'config': {
-                            'data_source': 'users',
-                            'field': 'plan',
-                            'options': ['basic', 'premium', 'enterprise']
-                        }
-                    }
-                ]
-            })
-    
-    # Sigma Actions (stub endpoint for standalone mode)
-    @app.route('/api/sigma/actions', methods=['GET'])
-    def get_sigma_actions():
-        """Get Sigma actions"""
-        if hasattr(app, 'sigma_integration') and app.sigma_integration:
-            # Use real Sigma integration if available
-            try:
-                return app.sigma_integration.get_actions()
-            except Exception as e:
-                logger.error(f"Error getting actions: {e}")
-                return jsonify({'error': str(e)}), 500
-        else:
-            # Provide stub data for standalone mode
-            return jsonify({
-                'status': 'success',
-                'data': [
-                    {
-                        'id': 'export_data',
-                        'name': 'Export Data',
-                        'description': 'Export current view data to CSV/Excel',
-                        'action_type': 'data_export',
-                        'config': {
-                            'formats': ['csv', 'excel', 'json'],
-                            'filters': True,
-                            'scheduling': False
-                        },
-                        'enabled': True
-                    },
-                    {
-                        'id': 'schedule_report',
-                        'name': 'Schedule Report',
-                        'description': 'Schedule automated report generation',
-                        'action_type': 'automation',
-                        'config': {
-                            'frequencies': ['daily', 'weekly', 'monthly'],
-                            'delivery': ['email', 'slack', 'webhook'],
-                            'templates': ['summary', 'detailed', 'executive']
-                        },
-                        'enabled': True
-                    },
-                    {
-                        'id': 'send_alert',
-                        'name': 'Send Alert',
-                        'description': 'Send alerts based on data thresholds',
-                        'action_type': 'notification',
-                        'config': {
-                            'triggers': ['threshold_exceeded', 'anomaly_detected'],
-                            'channels': ['email', 'slack', 'sms'],
-                            'conditions': ['above', 'below', 'equals']
-                        },
-                        'enabled': True
-                    }
-                ]
-            })
-    
-    # Sigma Action Execution (stub endpoint for standalone mode)
-    @app.route('/api/sigma/actions/<action_id>/execute', methods=['POST'])
-    def execute_sigma_action(action_id):
-        """Execute a Sigma action"""
-        if hasattr(app, 'sigma_integration') and app.sigma_integration:
-            # Use real Sigma integration if available
-            try:
-                return app.sigma_integration.execute_action(action_id, request.get_json())
-            except Exception as e:
-                logger.error(f"Error executing action: {e}")
-                return jsonify({'error': str(e)}), 500
-        else:
-            # Provide stub response for standalone mode
-            return jsonify({
-                'status': 'success',
-                'message': f'Action {action_id} executed successfully (stub mode)',
-                'data': {
-                    'action_id': action_id,
-                    'execution_time': '0.1s',
-                    'result': 'stub_execution_complete'
-                }
-            })
+    # Note: All other Sigma endpoints (/api/sigma/status, /api/sigma/capabilities, etc.)
+    # are now handled by the sigma_integration module to avoid route conflicts
     
     # API Routes
     @app.route('/api/segments', methods=['GET'])

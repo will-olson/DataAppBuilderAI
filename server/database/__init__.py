@@ -50,19 +50,37 @@ class DatabaseAdapter(ABC):
 def create_database_adapter(config: Dict) -> DatabaseAdapter:
     """Factory function to create appropriate database adapter"""
     
-    database_mode = config.get('DATABASE_MODE', 'sqlite')
-    
-    if database_mode == 'sqlite':
+    try:
+        # Handle different config object types
+        if hasattr(config, 'get'):
+            # Flask config object or dict-like object
+            database_mode = config.get('DATABASE_MODE', 'sqlite')
+        elif hasattr(config, 'DATABASE_MODE'):
+            # Config class object
+            database_mode = config.DATABASE_MODE
+        else:
+            # Fallback to sqlite
+            logger.warning(f"Unknown config object type: {type(config)}, falling back to sqlite mode")
+            database_mode = 'sqlite'
+        
+        if database_mode == 'sqlite':
+            from .sqlite_adapter import SQLiteAdapter
+            return SQLiteAdapter(config)
+        
+        elif database_mode == 'mock_warehouse':
+            from .mock_warehouse import MockWarehouseAdapter
+            return MockWarehouseAdapter(config)
+        
+        elif database_mode == 'real_warehouse':
+            from .sigma_adapter import SigmaWarehouseAdapter
+            return SigmaWarehouseAdapter(config)
+        
+        else:
+            logger.warning(f"Unsupported database mode: {database_mode}, falling back to sqlite mode")
+            from .sqlite_adapter import SQLiteAdapter
+            return SQLiteAdapter(config)
+            
+    except Exception as e:
+        logger.error(f"Error creating database adapter: {e}, falling back to sqlite mode")
         from .sqlite_adapter import SQLiteAdapter
-        return SQLiteAdapter(config)
-    
-    elif database_mode == 'mock_warehouse':
-        from .mock_warehouse_adapter import MockWarehouseAdapter
-        return MockWarehouseAdapter(config)
-    
-    elif database_mode == 'real_warehouse':
-        from .sigma_adapter import SigmaWarehouseAdapter
-        return SigmaWarehouseAdapter(config)
-    
-    else:
-        raise ValueError(f"Unsupported database mode: {database_mode}") 
+        return SQLiteAdapter(config) 
