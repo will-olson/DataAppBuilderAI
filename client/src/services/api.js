@@ -30,15 +30,32 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
       
+      // Parse the response body first
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // If response is not JSON, treat as text
+        data = await response.text();
+      }
+      
+      // Check if response is ok (2xx status)
       if (!response.ok) {
+        // For 404 responses, check if they contain valid error messages
+        if (response.status === 404 && data && typeof data === 'object' && data.message) {
+          // This is a valid 404 response with an error message, return it as data
+          console.log(`API Response (404 with message): ${url}`, data);
+          return data;
+        }
+        
+        // For other error statuses, throw an error
         throw new ApiError(
           `HTTP error! status: ${response.status}`,
           response.status,
-          await response.json().catch(() => ({}))
+          data
         );
       }
 
-      const data = await response.json();
       console.log(`API Response: ${url}`, data);
       return data;
     } catch (error) {

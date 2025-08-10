@@ -18,12 +18,18 @@ import {
   Storage as StorageIcon,
   Settings as SettingsIcon,
   Code as CodeIcon,
-  People as PeopleIcon
+  People as PeopleIcon,
+  Assessment as AssessmentIcon,
+  IntegrationInstructions as IntegrationInstructionsIcon,
+  PlayArrow as PlayArrowIcon,
+  NewReleases as NewReleasesIcon,
+  Event as EventIcon
 } from '@mui/icons-material';
 import useApi from '../../hooks/useApi';
 import apiClient from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 import SigmaModeToggle from '../SigmaModeToggle';
+import { Link } from 'react-router-dom';
 
 const SigmaStatusPage = () => {
   // Memoize API functions to prevent recreation on every render
@@ -75,11 +81,18 @@ const SigmaStatusPage = () => {
   const refreshAllData = () => {
     updateRefreshTime();
     addNotification('Refreshing all data...', 'info');
-    refetchStatus();
-    refetchCaps();
-    refetchHealth();
-    refetchUser();
-    refetchCount();
+    
+    // Add error handling for refetch functions
+    try {
+      if (typeof refetchStatus === 'function') refetchStatus();
+      if (typeof refetchCaps === 'function') refetchCaps();
+      if (typeof refetchHealth === 'function') refetchHealth();
+      if (typeof refetchUser === 'function') refetchUser();
+      if (typeof refetchCount === 'function') refetchCount();
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+      addNotification(`Manual refresh failed: ${error.message}`, 'error');
+    }
   };
 
   // Enhanced refresh function that also fetches current Sigma configuration
@@ -92,13 +105,16 @@ const SigmaStatusPage = () => {
       console.log('Current Sigma config after refresh:', configResponse);
       
       // Then refresh all data with the updated configuration
-      await Promise.all([
-        refetchStatus(),
-        refetchCaps(),
-        refetchHealth(),
-        refetchUser(),
-        refetchCount()
-      ]);
+      const refreshPromises = [];
+      if (typeof refetchStatus === 'function') refreshPromises.push(refetchStatus());
+      if (typeof refetchCaps === 'function') refreshPromises.push(refetchCaps());
+      if (typeof refetchHealth === 'function') refreshPromises.push(refetchHealth());
+      if (typeof refetchUser === 'function') refreshPromises.push(refetchUser());
+      if (typeof refetchCount === 'function') refreshPromises.push(refetchCount());
+      
+      if (refreshPromises.length > 0) {
+        await Promise.all(refreshPromises);
+      }
       
       addNotification('Enhanced refresh completed successfully!', 'success');
       
@@ -147,11 +163,14 @@ const SigmaStatusPage = () => {
       const refreshForModeChange = async () => {
         try {
           addNotification(`Sigma mode changed to: ${sigmaStatus.sigma_mode}`, 'info');
-          await Promise.all([
-            refetchHealth(),
-            refetchUser(),
-            refetchCount()
-          ]);
+          const refreshPromises = [];
+          if (typeof refetchHealth === 'function') refreshPromises.push(refetchHealth());
+          if (typeof refetchUser === 'function') refreshPromises.push(refetchUser());
+          if (typeof refetchCount === 'function') refreshPromises.push(refetchCount());
+          
+          if (refreshPromises.length > 0) {
+            await Promise.all(refreshPromises);
+          }
           addNotification('Data refreshed after mode change', 'success');
         } catch (error) {
           console.error('Error refreshing data after mode change:', error);
@@ -286,6 +305,20 @@ const SigmaStatusPage = () => {
         return <ErrorIcon />;
       default:
         return <InfoIcon />;
+    }
+  };
+
+  const getModeColor = (mode) => {
+    switch (mode?.toLowerCase()) {
+      case 'standalone':
+      case 'local':
+        return 'info';
+      case 'cloud':
+        return 'primary';
+      case 'hybrid':
+        return 'warning';
+      default:
+        return 'default';
     }
   };
 
@@ -531,9 +564,9 @@ const SigmaStatusPage = () => {
                   variant="outlined"
                   size="small"
                   onClick={() => {
-                    refetchHealth();
-                    refetchUser();
-                    refetchCount();
+                    if (typeof refetchHealth === 'function') refetchHealth();
+                    if (typeof refetchUser === 'function') refetchUser();
+                    if (typeof refetchCount === 'function') refetchCount();
                   }}
                   startIcon={<StorageIcon />}
                 >
@@ -615,77 +648,128 @@ const SigmaStatusPage = () => {
         </Grid>
 
         {/* Sigma Framework Status */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                <Box display="flex" alignItems="center">
-                  <CodeIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6" component="h2">
-                    Sigma Framework Status
-                  </Typography>
-                </Box>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => {
-                    refetchStatus();
-                    refetchCaps();
-                  }}
-                  startIcon={<CodeIcon />}
-                >
-                  Refresh Sigma
-                </Button>
-              </Box>
-              
-              {sigmaData ? (
-                <Box>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      Status:
-                    </Typography>
-                    <Chip
-                      icon={getStatusIcon(sigmaData.sigma_layer?.status || sigmaData.sigma_mode)}
-                      label={sigmaData.sigma_layer?.status || sigmaData.sigma_mode || 'Unknown'}
-                      color={getStatusColor(sigmaData.sigma_layer?.status || sigmaData.sigma_mode)}
-                      size="small"
-                    />
-                  </Box>
-                  
-                  <Typography variant="body2" color="text.secondary" mb={2}>
-                    Sigma framework is {sigmaData.sigma_layer?.status || sigmaData.sigma_mode || 'operational'}
-                  </Typography>
-
-                  {sigmaData.database_adapter && (
-                    <Box mb={2}>
-                      <Typography variant="subtitle2" mb={1}>Database Adapter:</Typography>
-                      <Chip
-                        label={sigmaData.database_adapter.type}
-                        color="primary"
-                        size="small"
-                        variant="outlined"
-                        sx={{ mr: 1 }}
-                      />
-                      <Chip
-                        label={sigmaData.database_adapter.status}
-                        color={getStatusColor(sigmaData.database_adapter.status)}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </Box>
-                  )}
-                  
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography variant="body2" component="pre" sx={{ fontSize: '0.8rem' }}>
-                      {JSON.stringify(sigmaData, null, 2)}
-                    </Typography>
-                  </Paper>
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No status information available
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <AssessmentIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  Framework Status
                 </Typography>
-              )}
+                
+                <Box sx={{ mb: 2 }}>
+                  <Chip 
+                    label={`Mode: ${sigmaStatus?.mode || 'Unknown'}`}
+                    color={getModeColor(sigmaStatus?.mode)}
+                    sx={{ mb: 1 }}
+                  />
+                  <Chip 
+                    label={`Status: ${sigmaStatus?.status || 'Unknown'}`}
+                    color={sigmaStatus?.status === 'active' ? 'success' : 'error'}
+                    sx={{ mb: 1 }}
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Current Sigma framework operational mode and status.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <IntegrationInstructionsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  SDK Integration
+                </Typography>
+                
+                <Box sx={{ mb: 2 }}>
+                  <Chip 
+                    label="React SDK v0.7.0"
+                    color="primary"
+                    sx={{ mb: 1 }}
+                  />
+                  <Chip 
+                    label="Embed SDK v0.7.0"
+                    color="secondary"
+                    sx={{ mb: 1 }}
+                  />
+                  <Chip 
+                    label="TypeScript Support"
+                    color="info"
+                    sx={{ mb: 1 }}
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Official Sigma React SDK integration for true platform compatibility.
+                </Typography>
+                
+                <Button
+                  variant="contained"
+                  component={Link}
+                  to="/sigma/playground"
+                  startIcon={<PlayArrowIcon />}
+                  sx={{ mt: 1 }}
+                >
+                  Open Development Playground
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* New Sigma SDK Features */}
+        <Grid item xs={12}>
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <NewReleasesIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                Sigma SDK Integration Features
+              </Typography>
+              
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ textAlign: 'center', p: 2 }}>
+                    <IntegrationInstructionsIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      True Platform Compatibility
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Use Sigma's official React SDK for seamless integration with Sigma's platform.
+                      Build data applications that can be directly imported into Sigma.
+                    </Typography>
+                  </Box>
+                </Grid>
+                
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ textAlign: 'center', p: 2 }}>
+                    <EventIcon sx={{ fontSize: 48, color: 'secondary.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Real-time Communication
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      PostMessage-based communication with Sigma iframes. Handle workbook lifecycle,
+                      user interactions, and data synchronization in real-time.
+                    </Typography>
+                  </Box>
+                </Grid>
+                
+                <Grid item xs={12} md={4}>
+                  <Box sx={{ textAlign: 'center', p: 2 }}>
+                    <CodeIcon sx={{ fontSize: 48, color: 'info.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      Developer Experience
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      TypeScript support, React hooks, and comprehensive event handling.
+                      Perfect playground for developing Sigma-compatible data applications.
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
@@ -704,7 +788,9 @@ const SigmaStatusPage = () => {
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={() => refetchCaps()}
+                  onClick={() => {
+                    if (typeof refetchCaps === 'function') refetchCaps();
+                  }}
                   startIcon={<SettingsIcon />}
                 >
                   Refresh Capabilities

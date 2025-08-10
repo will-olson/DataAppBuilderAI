@@ -33,6 +33,17 @@ const useApi = (apiFunction, options = {}) => {
 
     try {
       const result = await apiFunction(...args, abortControllerRef.current.signal);
+      
+      // Check if the result is an error response (has status: 'error')
+      if (result && result.status === 'error') {
+        // This is a valid error response from the backend, not a network error
+        setError(result.message || 'An error occurred');
+        if (onError) {
+          onError(result);
+        }
+        return result;
+      }
+      
       setData(result);
       
       if (onSuccess) {

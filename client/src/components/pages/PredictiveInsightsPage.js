@@ -1,22 +1,13 @@
 import React from 'react';
-import { 
-  Container, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Button,
+import {
   Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Button,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  Chip
 } from '@mui/material';
 import { 
   TrendingUp as TrendingUpIcon,
@@ -43,7 +34,6 @@ import apiClient from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const PredictiveInsightsPage = () => {
-  const [expandedInsight, setExpandedInsight] = React.useState(null);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = React.useState(false);
 
   // Use the useApi hook for data fetching
@@ -52,7 +42,7 @@ const PredictiveInsightsPage = () => {
   // Handle errors gracefully
   if (error) {
     return (
-      <Container>
+      <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
           Error generating predictive insights: {error.message}
         </Alert>
@@ -63,7 +53,7 @@ const PredictiveInsightsPage = () => {
         >
           Retry
         </Button>
-      </Container>
+      </Box>
     );
   }
 
@@ -94,10 +84,6 @@ const PredictiveInsightsPage = () => {
 
   const handleRefresh = () => {
     generatePredictiveInsights();
-  };
-
-  const handleInsightExpand = (insightId) => {
-    setExpandedInsight(expandedInsight === insightId ? null : insightId);
   };
 
   const renderRevenueChart = () => (
@@ -148,17 +134,14 @@ const PredictiveInsightsPage = () => {
   const renderInsightsList = () => {
     if (!safeData.insights || typeof safeData.insights === 'string') {
       return (
-        <List>
-          <ListItem>
-            <ListItemIcon>
-              <InfoIcon color="primary" />
-            </ListItemIcon>
-            <ListItemText 
-              primary="General Insights" 
-              secondary={safeData.insights || 'No insights available'} 
-            />
-          </ListItem>
-        </List>
+        <Box>
+          <Chip 
+            icon={<InfoIcon color="primary" />}
+            label={safeData.insights || 'No insights available'} 
+            variant="outlined"
+            sx={{ mb: 1 }}
+          />
+        </Box>
       );
     }
 
@@ -166,22 +149,23 @@ const PredictiveInsightsPage = () => {
     const insightsArray = Array.isArray(safeData.insights) ? safeData.insights : [safeData.insights];
     
     return (
-      <List>
+      <Box>
         {insightsArray.map((insight, index) => (
           <React.Fragment key={index}>
-            <ListItem>
-              <ListItemIcon>
-                {insight.type === 'warning' ? (
-                  <WarningIcon color="warning" />
-                ) : insight.type === 'trend' ? (
-                  <TrendingUpIcon color="success" />
-                ) : (
-                  <InfoIcon color="info" />
-                )}
-              </ListItemIcon>
-              <ListItemText 
-                primary={insight.title || `Insight ${index + 1}`}
-                secondary={insight.description || insight.message || insight}
+            <Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
+              <Chip 
+                icon={
+                  insight.type === 'warning' ? (
+                    <WarningIcon color="warning" />
+                  ) : insight.type === 'trend' ? (
+                    <TrendingUpIcon color="success" />
+                  ) : (
+                    <InfoIcon color="info" />
+                  )
+                }
+                label={insight.title || `Insight ${index + 1}`}
+                variant="outlined"
+                sx={{ mr: 1 }}
               />
               {insight.actions && (
                 <Box>
@@ -197,11 +181,10 @@ const PredictiveInsightsPage = () => {
                   ))}
                 </Box>
               )}
-            </ListItem>
-            {index < insightsArray.length - 1 && <Divider />}
+            </Box>
           </React.Fragment>
         ))}
-      </List>
+      </Box>
     );
   };
 
@@ -211,72 +194,66 @@ const PredictiveInsightsPage = () => {
     return (
       <Grid container spacing={3} sx={{ mt: 2 }}>
         <Grid item xs={12} md={6}>
-          <Accordion 
-            expanded={expandedInsight === 'revenue'} 
-            onChange={() => handleInsightExpand('revenue')}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">Revenue Analysis</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography variant="body2" paragraph>
-                Revenue projections show a steady upward trend with seasonal variations. 
-                Q4 typically shows the highest revenue due to holiday spending patterns.
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemText 
-                    primary="Growth Rate" 
-                    secondary="20% quarter-over-quarter" 
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText 
-                    primary="Seasonal Factor" 
-                    secondary="Q4 peak: +40% vs Q1" 
-                  />
-                </ListItem>
-              </List>
-            </AccordionDetails>
-          </Accordion>
+          <Box>
+            <Chip 
+              icon={<ExpandMoreIcon />}
+              label="Revenue Analysis" 
+              variant="outlined"
+              sx={{ mb: 1 }}
+            />
+            <Typography variant="body2" paragraph>
+              Revenue projections show a steady upward trend with seasonal variations. 
+              Q4 typically shows the highest revenue due to holiday spending patterns.
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <Chip 
+                icon={<TrendingUpIcon color="success" />}
+                label="Growth Rate: 20% quarter-over-quarter" 
+                variant="outlined"
+                sx={{ mr: 1 }}
+              />
+              <Chip 
+                icon={<InfoIcon color="info" />}
+                label="Seasonal Factor: Q4 peak: +40% vs Q1" 
+                variant="outlined"
+              />
+            </Box>
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Accordion 
-            expanded={expandedInsight === 'churn'} 
-            onChange={() => handleInsightExpand('churn')}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">Churn Risk Analysis</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography variant="body2" paragraph>
-                Churn risk analysis identifies users most likely to leave the platform.
-                Focus on high-risk users to improve retention.
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemText 
-                    primary="High Risk Users" 
-                    secondary="10% of total user base" 
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText 
-                    primary="Retention Opportunity" 
-                    secondary="Potential 15% improvement" 
-                  />
-                </ListItem>
-              </List>
-            </AccordionDetails>
-          </Accordion>
+          <Box>
+            <Chip 
+              icon={<ExpandMoreIcon />}
+              label="Churn Risk Analysis" 
+              variant="outlined"
+              sx={{ mb: 1 }}
+            />
+            <Typography variant="body2" paragraph>
+              Churn risk analysis identifies users most likely to leave the platform.
+              Focus on high-risk users to improve retention.
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <Chip 
+                icon={<WarningIcon color="warning" />}
+                label="High Risk Users: 10% of total user base" 
+                variant="outlined"
+                sx={{ mr: 1 }}
+              />
+              <Chip 
+                icon={<InfoIcon color="info" />}
+                label="Retention Opportunity: Potential 15% improvement" 
+                variant="outlined"
+              />
+            </Box>
+          </Box>
         </Grid>
       </Grid>
     );
   };
 
   return (
-    <Container>
+    <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4">
           Predictive Insights
@@ -350,41 +327,31 @@ const PredictiveInsightsPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Recommended Actions
                 </Typography>
-                <List>
-                  <ListItem>
-                    <ListItemIcon>
-                      <TrendingUpIcon color="success" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Focus on Q4 Marketing Campaigns" 
-                      secondary="Leverage seasonal revenue patterns for maximum impact" 
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <WarningIcon color="warning" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Implement Retention Strategies" 
-                      secondary="Target high-risk users with personalized engagement" 
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <InfoIcon color="info" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Monitor Revenue Trends" 
-                      secondary="Track quarter-over-quarter growth and adjust strategies" 
-                    />
-                  </ListItem>
-                </List>
+                <Box>
+                  <Chip 
+                    icon={<TrendingUpIcon color="success" />}
+                    label="Focus on Q4 Marketing Campaigns" 
+                    variant="outlined"
+                    sx={{ mr: 1 }}
+                  />
+                  <Chip 
+                    icon={<WarningIcon color="warning" />}
+                    label="Implement Retention Strategies" 
+                    variant="outlined"
+                    sx={{ mr: 1 }}
+                  />
+                  <Chip 
+                    icon={<InfoIcon color="info" />}
+                    label="Monitor Revenue Trends" 
+                    variant="outlined"
+                  />
+                </Box>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
       )}
-    </Container>
+    </Box>
   );
 };
 

@@ -58,6 +58,7 @@ import SigmaStatusPage from './components/pages/SigmaStatusPage';
 import InputTablesPage from './components/pages/InputTablesPage';
 import LayoutElementsPage from './components/pages/LayoutElementsPage';
 import ActionsPage from './components/pages/ActionsPage';
+import SigmaPlaygroundPage from './components/pages/SigmaPlaygroundPage';
 
 // Import ErrorBoundary
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -156,6 +157,12 @@ function App() {
       icon: <AssessmentIcon />,
       path: '/sigma/status',
       page: SigmaStatusPage
+    },
+    {
+      text: 'Development Playground',
+      icon: <CodeIcon />,
+      path: '/sigma/playground',
+      page: SigmaPlaygroundPage
     },
     {
       text: 'Input Tables',
@@ -346,6 +353,7 @@ function App() {
                 
                 {/* Sigma Framework Routes */}
                 <Route path="/sigma/status" element={<SigmaStatusPage />} />
+                <Route path="/sigma/playground" element={<SigmaPlaygroundPage />} />
                 <Route path="/sigma/input-tables" element={<InputTablesPage />} />
                 <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
                 <Route path="/sigma/actions" element={<ActionsPage />} />

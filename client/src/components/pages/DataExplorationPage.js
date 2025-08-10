@@ -1,41 +1,41 @@
 import React, { useState } from 'react';
-import { 
-    Container, 
-    Typography, 
-    Grid, 
-    Card, 
-    CardContent, 
-    Button,
-    List,
-    ListItem,
-    ListItemText,
-    Box,
-    Alert,
-    TableContainer,
-    Table,
-    TableHead,
-    TableBody,
-    TableRow,
-    TableCell,
-    Paper,
-    TablePagination,
-    Checkbox,
-    Chip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Chip,
+  Container,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+  TablePagination,
+  Checkbox,
+  List,
+  ListItem,
+  ListItemText
 } from '@mui/material';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
   Legend,
   CartesianGrid
 } from 'recharts';
@@ -67,8 +67,8 @@ const DataExplorationPage = () => {
         <Alert severity="error" sx={{ mb: 2 }}>
           Error loading user data: {error.message}
         </Alert>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           onClick={refetchData}
           sx={{ mt: 2 }}
         >
@@ -86,14 +86,14 @@ const DataExplorationPage = () => {
   // Prepare data for charts
   const getPlanDistribution = () => {
     if (!userData) return [];
-    
+
     const planCounts = userData.reduce((acc, user) => {
       acc[user.plan] = (acc[user.plan] || 0) + 1;
       return acc;
     }, {});
 
     return Object.entries(planCounts).map(([name, value]) => ({
-      name, 
+      name,
       value,
       percentage: ((value / userData.length) * 100).toFixed(2)
     }));
@@ -101,7 +101,7 @@ const DataExplorationPage = () => {
 
   const getLTVDistribution = () => {
     if (!userData) return [];
-    
+
     const ranges = [
       { name: '$0-$100', min: 0, max: 100 },
       { name: '$100-$500', min: 100, max: 500 },
@@ -111,8 +111,8 @@ const DataExplorationPage = () => {
 
     return ranges.map(range => ({
       name: range.name,
-      count: userData.filter(user => 
-        user.lifetimeValue >= range.min && 
+      count: userData.filter(user =>
+        user.lifetimeValue >= range.min &&
         user.lifetimeValue < range.max
       ).length
     }));
@@ -184,11 +184,11 @@ const DataExplorationPage = () => {
   if (!userData || userData.length === 0) {
     return (
       <Container>
-        <Box 
-          display="flex" 
-          flexDirection="column" 
-          alignItems="center" 
-          justifyContent="center" 
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
           height="100vh"
         >
           <Typography variant="h6">
@@ -208,7 +208,7 @@ const DataExplorationPage = () => {
       {/* View Selection Buttons */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item>
-          <Button 
+          <Button
             variant={activeView === 'table' ? 'contained' : 'outlined'}
             onClick={() => setActiveView('table')}
           >
@@ -216,7 +216,7 @@ const DataExplorationPage = () => {
           </Button>
         </Grid>
         <Grid item>
-          <Button 
+          <Button
             variant={activeView === 'planDistribution' ? 'contained' : 'outlined'}
             onClick={() => setActiveView('planDistribution')}
           >
@@ -224,7 +224,7 @@ const DataExplorationPage = () => {
           </Button>
         </Grid>
         <Grid item>
-          <Button 
+          <Button
             variant={activeView === 'ltvDistribution' ? 'contained' : 'outlined'}
             onClick={() => setActiveView('ltvDistribution')}
           >
@@ -233,8 +233,8 @@ const DataExplorationPage = () => {
         </Grid>
         {selectedUsers.length > 0 && (
           <Grid item>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               color="secondary"
               onClick={() => handleExport(selectedUsers)}
             >
@@ -292,10 +292,10 @@ const DataExplorationPage = () => {
                                 </Box>
                               </TableCell>
                               <TableCell>
-                                <Chip 
-                                  label={user.plan} 
-                                  color="primary" 
-                                  size="small" 
+                                <Chip
+                                  label={user.plan}
+                                  color="primary"
+                                  size="small"
                                 />
                               </TableCell>
                               <TableCell>
@@ -307,15 +307,15 @@ const DataExplorationPage = () => {
                                 <Typography variant="body2">{user.total_sessions || 0}</Typography>
                               </TableCell>
                               <TableCell>
-                                <Chip 
-                                  label={user.account_status || 'Active'} 
-                                  color={user.account_status === 'Active' ? 'success' : 'default'} 
-                                  size="small" 
+                                <Chip
+                                  label={user.account_status || 'Active'}
+                                  color={user.account_status === 'Active' ? 'success' : 'default'}
+                                  size="small"
                                 />
                               </TableCell>
                               <TableCell>
-                                <Button 
-                                  size="small" 
+                                <Button
+                                  size="small"
                                   onClick={() => handleRowDetails(user)}
                                 >
                                   Details
@@ -356,9 +356,9 @@ const DataExplorationPage = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value, name, props) => [
-                        `${value} Users`, 
+                        `${value} Users`,
                         `${props.payload.percentage}%`
                       ]}
                     />
@@ -423,8 +423,8 @@ const DataExplorationPage = () => {
       </Grid>
 
       {/* User Details Modal */}
-      <Dialog 
-        open={!!selectedUser} 
+      <Dialog
+        open={!!selectedUser}
         onClose={() => setSelectedUser(null)}
         maxWidth="md"
         fullWidth
@@ -434,39 +434,39 @@ const DataExplorationPage = () => {
           {selectedUser && (
             <List>
               <ListItem>
-                <ListItemText 
-                  primary="Username" 
-                  secondary={selectedUser.username} 
+                <ListItemText
+                  primary="Username"
+                  secondary={selectedUser.username}
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
-                  primary="Email" 
-                  secondary={selectedUser.email} 
+                <ListItemText
+                  primary="Email"
+                  secondary={selectedUser.email}
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
-                  primary="Age" 
-                  secondary={selectedUser.age} 
+                <ListItemText
+                  primary="Age"
+                  secondary={selectedUser.age}
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
-                  primary="Plan" 
-                  secondary={selectedUser.plan} 
+                <ListItemText
+                  primary="Plan"
+                  secondary={selectedUser.plan}
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
-                  primary="Lifetime Value" 
-                  secondary={`$${(selectedUser.lifetime_value || 0).toFixed(2)}`} 
+                <ListItemText
+                  primary="Lifetime Value"
+                  secondary={`$${(selectedUser.lifetime_value || 0).toFixed(2)}`}
                 />
               </ListItem>
               <ListItem>
-                <ListItemText 
-                  primary="Total Sessions" 
-                  secondary={selectedUser.total_sessions || 0} 
+                <ListItemText
+                  primary="Total Sessions"
+                  secondary={selectedUser.total_sessions || 0}
                 />
               </ListItem>
             </List>
@@ -475,8 +475,8 @@ const DataExplorationPage = () => {
       </Dialog>
 
       {/* Export Confirmation Dialog */}
-      <Dialog 
-        open={exportDialogOpen} 
+      <Dialog
+        open={exportDialogOpen}
         onClose={() => setExportDialogOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -506,16 +506,16 @@ const DataExplorationPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setExportDialogOpen(false)}>Cancel</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={() => {
               // Implement actual CSV export logic here
-              const csvContent = "data:text/csv;charset=utf-8," + 
+              const csvContent = "data:text/csv;charset=utf-8," +
                 "Username,Email,Plan,Lifetime Value,Sessions,Status\n" +
-                selectedUsers.map(user => 
+                selectedUsers.map(user =>
                   `${user.username},${user.email},${user.plan},${user.lifetime_value || 0},${user.total_sessions || 0},${user.account_status || 'Active'}`
                 ).join("\n");
-              
+
               const encodedUri = encodeURI(csvContent);
               const link = document.createElement("a");
               link.setAttribute("href", encodedUri);
@@ -523,7 +523,7 @@ const DataExplorationPage = () => {
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
-              
+
               setExportDialogOpen(false);
               setSelectedUsers([]);
             }}

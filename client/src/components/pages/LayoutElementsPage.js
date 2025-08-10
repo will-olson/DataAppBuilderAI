@@ -65,9 +65,17 @@ const LayoutElementsPage = () => {
   if (error) {
     console.error('Layout Elements Error:', error);
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Error loading layout elements: {error.message || error}
-        <Button onClick={fetchLayoutElements} sx={{ ml: 2 }}>
+      <Alert severity="warning" sx={{ mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Sigma Layout Elements Not Available
+        </Typography>
+        <Typography variant="body2" gutterBottom>
+          {error.message || error}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          This feature requires Sigma framework integration. Currently running in standalone mode.
+        </Typography>
+        <Button onClick={fetchLayoutElements} sx={{ mt: 2 }}>
           Retry
         </Button>
       </Alert>

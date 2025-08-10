@@ -69,9 +69,17 @@ const ActionsPage = () => {
   if (error) {
     console.error('Actions Error:', error);
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Error loading actions: {error.message || error}
-        <Button onClick={fetchActions} sx={{ ml: 2 }}>
+      <Alert severity="warning" sx={{ mb: 2 }}>
+        <Typography variant="h6" gutterBottom>
+          Sigma Actions Not Available
+        </Typography>
+        <Typography variant="body2" gutterBottom>
+          {error.message || error}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          This feature requires Sigma framework integration. Currently running in standalone mode.
+        </Typography>
+        <Button onClick={fetchActions} sx={{ mt: 2 }}>
           Retry
         </Button>
       </Alert>
