@@ -168,6 +168,10 @@ class ApiClient {
     return this.get(`/raw-user-data?limit=${limit}&offset=${offset}`);
   }
 
+  async getUserCount() {
+    return this.get('/user-count');
+  }
+
   async getAIInsights() {
     return this.get('/ai-insights');
   }

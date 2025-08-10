@@ -631,6 +631,20 @@ def create_app(config_class=None):
             app.logger.error(f"Error in raw user data route: {str(e)}")
             return jsonify({'error': str(e)}), 500
 
+    @app.route('/api/user-count', methods=['GET'])
+    def get_user_count():
+        """Get the total count of users in the database"""
+        try:
+            from app.models import User
+            user_count = User.query.count()
+            return jsonify({
+                'total_users': user_count,
+                'status': 'success'
+            })
+        except Exception as e:
+            app.logger.error(f"Error getting user count: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
     @app.route('/api/ai-insights', methods=['GET'])
     def ai_insights():
         try:
