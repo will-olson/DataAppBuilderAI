@@ -34,14 +34,41 @@ const SigmaStatusPage = () => {
   const getUserCount = React.useCallback(() => apiClient.getUserCount(), []);
 
   // Use the useApi hook for data fetching with better error handling
-  const { data: sigmaStatus, loading: statusLoading, error: statusError } = useApi(getSigmaStatus, { autoExecute: true });
-  const { data: capabilities, loading: capsLoading, error: capsError } = useApi(getSigmaCapabilities, { autoExecute: true });
-  const { data: dbHealth, loading: healthLoading, error: healthError } = useApi(getHealthCheck, { autoExecute: true });
-  const { data: userData, loading: userLoading, error: userError } = useApi(getRawUserData, { autoExecute: true });
-  const { data: userCountData, loading: countLoading, error: countError } = useApi(getUserCount, { autoExecute: true });
+  const { data: sigmaStatus, loading: statusLoading, error: statusError, refetch: refetchStatus } = useApi(getSigmaStatus, { autoExecute: true });
+  const { data: capabilities, loading: capsLoading, error: capsError, refetch: refetchCaps } = useApi(getSigmaCapabilities, { autoExecute: true });
+  const { data: dbHealth, loading: healthLoading, error: healthError, refetch: refetchHealth } = useApi(getHealthCheck, { autoExecute: true });
+  const { data: userData, loading: userLoading, error: userError, refetch: refetchUser } = useApi(getRawUserData, { autoExecute: true });
+  const { data: userCountData, loading: countLoading, error: countError, refetch: refetchCount } = useApi(getUserCount, { autoExecute: true });
 
   const loading = statusLoading || capsLoading || healthLoading || userLoading || countLoading;
   const error = statusError || capsError || healthError || userError || countError;
+
+  // Auto-refresh functionality
+  const [autoRefresh, setAutoRefresh] = React.useState(false);
+  const [refreshInterval, setRefreshInterval] = React.useState(30000); // 30 seconds
+
+  React.useEffect(() => {
+    let interval;
+    if (autoRefresh && refreshInterval > 0) {
+      interval = setInterval(() => {
+        refetchStatus();
+        refetchHealth();
+        refetchCount();
+      }, refreshInterval);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh, refreshInterval, refetchStatus, refetchHealth, refetchCount]);
+
+  // Manual refresh function
+  const refreshAllData = () => {
+    refetchStatus();
+    refetchCaps();
+    refetchHealth();
+    refetchUser();
+    refetchCount();
+  };
 
   // Debug logging
   React.useEffect(() => {
@@ -86,26 +113,44 @@ const SigmaStatusPage = () => {
         <Typography variant="body2" gutterBottom>
           {error.message || error}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          API Base URL: {process.env.REACT_APP_API_URL}
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          API Base URL: {process.env.REACT_APP_API_URL || 'http://localhost:5555/api'}
         </Typography>
-        <Button 
-          onClick={() => window.location.reload()} 
-          variant="outlined" 
-          sx={{ mt: 1 }}
-        >
-          Retry
-        </Button>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Environment: {process.env.NODE_ENV || 'development'}
+        </Typography>
+        <Box mt={2}>
+          <Button 
+            onClick={() => window.location.reload()} 
+            variant="outlined" 
+            sx={{ mr: 1 }}
+          >
+            Retry
+          </Button>
+          <Button 
+            onClick={() => {
+              console.log('Debug Info:', {
+                apiUrl: process.env.REACT_APP_API_URL,
+                nodeEnv: process.env.NODE_ENV,
+                errors: { statusError, capsError, healthError, userError, countError }
+              });
+            }} 
+            variant="text" 
+            size="small"
+          >
+            Debug Info
+          </Button>
+        </Box>
       </Alert>
     );
   }
 
   // Extract the actual data from the API response with proper fallbacks
-  const sigmaData = sigmaStatus?.data || sigmaStatus || {};
-  const capabilitiesData = capabilities?.data || capabilities || {};
-  const healthData = dbHealth?.data || dbHealth || {};
+  const sigmaData = sigmaStatus || {};
+  const capabilitiesData = capabilities || {};
+  const healthData = dbHealth || {};
   const userDataArray = Array.isArray(userData) ? userData : [];
-  const userCount = userCountData?.data?.total_users || 0;
+  const userCount = userCountData?.total_users || 0;
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -144,15 +189,81 @@ const SigmaStatusPage = () => {
       {/* Sigma Mode Toggle Component */}
       <SigmaModeToggle />
       
+      {/* System Status Summary */}
+      <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
+        <CardContent>
+          <Box display="flex" alignItems="center" mb={2}>
+            <InfoIcon sx={{ mr: 1 }} />
+            <Typography variant="h6" component="h2">
+              System Status Summary
+            </Typography>
+          </Box>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box textAlign="center">
+                <Typography variant="h4" color={healthData.status === 'healthy' ? 'success.main' : 'error.main'}>
+                  {healthData.status === 'healthy' ? '✅' : '❌'}
+                </Typography>
+                <Typography variant="body2">Database</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {healthData.status || 'Unknown'}
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Box textAlign="center">
+                <Typography variant="h4" color="primary.main">
+                  {sigmaData.sigma_mode || 'standalone'}
+                </Typography>
+                <Typography variant="body2">Sigma Mode</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {sigmaData.sigma_layer?.status || 'Unknown'}
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Box textAlign="center">
+                <Typography variant="h4" color="secondary.main">
+                  {userCount}
+                </Typography>
+                <Typography variant="body2">Total Users</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  In Database
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Box textAlign="center">
+                <Typography variant="h4" color={autoRefresh ? 'success.main' : 'default.main'}>
+                  {autoRefresh ? '🔄' : '⏸️'}
+                </Typography>
+                <Typography variant="body2">Auto-Refresh</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {autoRefresh ? 'Active' : 'Inactive'}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+      
       {/* Connection Status Summary */}
-      <Card sx={{ mb: 3, bgcolor: 'success.light', color: 'white' }}>
+      <Card sx={{ mb: 3, bgcolor: healthData.status === 'healthy' ? 'success.light' : 'error.light', color: 'white' }}>
         <CardContent>
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box display="flex" alignItems="center">
-              <CheckIcon sx={{ mr: 1, fontSize: 40 }} />
+              {healthData.status === 'healthy' ? (
+                <CheckIcon sx={{ mr: 1, fontSize: 40 }} />
+              ) : (
+                <ErrorIcon sx={{ mr: 1, fontSize: 40 }} />
+              )}
               <Box>
                 <Typography variant="h5" component="h2" gutterBottom>
-                  ✅ Connected to GrowthMarketer AI Server
+                  {healthData.status === 'healthy' ? '✅ Connected to GrowthMarketer AI Server' : '❌ Connection Issues Detected'}
                 </Typography>
                 <Typography variant="body1">
                   Server: {process.env.REACT_APP_API_URL || 'http://localhost:5555/api'}
@@ -160,14 +271,47 @@ const SigmaStatusPage = () => {
                 <Typography variant="body2">
                   Database: {healthData.database_mode || 'sqlite'} | Sigma Mode: {sigmaData.sigma_mode || 'standalone'}
                 </Typography>
+                {healthData.message && (
+                  <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                    {healthData.message}
+                  </Typography>
+                )}
+                {healthData.timestamp && (
+                  <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.8 }}>
+                    Last checked: {new Date(healthData.timestamp).toLocaleString()}
+                  </Typography>
+                )}
               </Box>
             </Box>
-            <Chip
-              icon={<CheckIcon />}
-              label="Connected"
-              color="success"
-              sx={{ color: 'white', bgcolor: 'success.dark' }}
-            />
+            <Box display="flex" alignItems="center" gap={2}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={refreshAllData}
+                sx={{ color: 'white', borderColor: 'white', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                Refresh Status
+              </Button>
+              <Button
+                variant={autoRefresh ? "contained" : "outlined"}
+                size="small"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                sx={{ 
+                  color: 'white', 
+                  borderColor: 'white', 
+                  bgcolor: autoRefresh ? 'rgba(255,255,255,0.2)' : 'transparent',
+                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } 
+                }}
+              >
+                {autoRefresh ? 'Auto-Refresh ON' : 'Auto-Refresh OFF'}
+              </Button>
+              <Chip
+                icon={healthData.status === 'healthy' ? <CheckIcon /> : <ErrorIcon />}
+                label={healthData.status === 'healthy' ? 'Connected' : 'Issues Detected'}
+                color={healthData.status === 'healthy' ? 'success' : 'error'}
+                sx={{ color: 'white', bgcolor: healthData.status === 'healthy' ? 'success.dark' : 'error.dark' }}
+              />
+            </Box>
           </Box>
         </CardContent>
       </Card>
@@ -193,15 +337,21 @@ const SigmaStatusPage = () => {
                     </Typography>
                     <Chip
                       icon={getStatusIcon(healthData.status)}
-                      label={healthData.status}
+                      label={healthData.status || 'Unknown'}
                       color={getStatusColor(healthData.status)}
                       size="small"
                     />
                   </Box>
                   
                   <Typography variant="body2" color="text.secondary" mb={2}>
-                    {healthData.message || 'Database connection is healthy'}
+                    {healthData.message || 'Database connection status'}
                   </Typography>
+
+                  {healthData.timestamp && (
+                    <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                      Last checked: {new Date(healthData.timestamp).toLocaleString()}
+                    </Typography>
+                  )}
 
                   <Divider sx={{ my: 2 }} />
                   

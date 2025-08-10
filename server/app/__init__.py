@@ -9,6 +9,7 @@ from flask_migrate import Migrate
 from sqlalchemy import text
 import logging
 from config import get_config, update_sigma_mode
+from datetime import datetime
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -110,24 +111,21 @@ def create_app(config_class=None):
                 return app.sigma_integration.get_sigma_status()
             except Exception as e:
                 logger.error(f"Error getting Sigma status: {e}")
-                return jsonify({'status': 'error', 'message': str(e)}), 500
+                return jsonify({'error': str(e)}), 500
         else:
             # Provide stub data for standalone mode
             return jsonify({
-                'status': 'success',
-                'data': {
-                    'sigma_mode': 'standalone',
-                    'database_mode': 'sqlite',
-                    'sigma_layer': {
-                        'mode': 'standalone',
-                        'status': 'active',
-                        'version': '1.0.0'
-                    },
-                    'database_adapter': {
-                        'type': 'sqlite',
-                        'status': 'healthy',
-                        'features': ['basic_analytics', 'user_segments', 'churn_prediction']
-                    }
+                'sigma_mode': 'standalone',
+                'database_mode': 'sqlite',
+                'sigma_layer': {
+                    'mode': 'standalone',
+                    'status': 'active',
+                    'version': '1.0.0'
+                },
+                'database_adapter': {
+                    'type': 'sqlite',
+                    'status': 'healthy',
+                    'features': ['basic_analytics', 'user_segments', 'churn_prediction']
                 }
             })
     
@@ -141,18 +139,15 @@ def create_app(config_class=None):
                 return app.sigma_integration.get_sigma_capabilities()
             except Exception as e:
                 logger.error(f"Error getting Sigma capabilities: {e}")
-                return jsonify({'status': 'error', 'message': str(e)}), 500
+                return jsonify({'error': str(e)}), 500
         else:
             # Provide stub data for standalone mode
             return jsonify({
-                'status': 'success',
-                'data': {
-                    'input_tables': ['users', 'sessions', 'transactions', 'events'],
-                    'layout_elements': ['charts', 'tables', 'filters', 'dashboards'],
-                    'actions': ['export_data', 'schedule_report', 'send_alert'],
-                    'data_governance': ['access_control', 'audit_logs', 'data_quality'],
-                    'real_time_sync': False
-                }
+                'input_tables': ['users', 'sessions', 'transactions', 'events'],
+                'layout_elements': ['charts', 'tables', 'filters', 'dashboards'],
+                'actions': ['export_data', 'schedule_report', 'send_alert'],
+                'data_governance': ['access_control', 'audit_logs', 'data_quality'],
+                'real_time_sync': False
             })
     
     # Sigma Input Tables (stub endpoint for standalone mode)
@@ -165,7 +160,7 @@ def create_app(config_class=None):
                 return app.sigma_integration.get_input_tables()
             except Exception as e:
                 logger.error(f"Error getting input tables: {e}")
-                return jsonify({'status': 'error', 'message': str(e)}), 500
+                return jsonify({'error': str(e)}), 500
         else:
             # Provide stub data for standalone mode
             return jsonify({
@@ -205,7 +200,7 @@ def create_app(config_class=None):
                 return app.sigma_integration.get_layout_elements()
             except Exception as e:
                 logger.error(f"Error getting layout elements: {e}")
-                return jsonify({'status': 'error', 'message': str(e)}), 500
+                return jsonify({'error': str(e)}), 500
         else:
             # Provide stub data for standalone mode
             return jsonify({
@@ -256,7 +251,7 @@ def create_app(config_class=None):
                 return app.sigma_integration.get_actions()
             except Exception as e:
                 logger.error(f"Error getting actions: {e}")
-                return jsonify({'status': 'error', 'message': str(e)}), 500
+                return jsonify({'error': str(e)}), 500
         else:
             # Provide stub data for standalone mode
             return jsonify({
@@ -311,7 +306,7 @@ def create_app(config_class=None):
                 return app.sigma_integration.execute_action(action_id, request.get_json())
             except Exception as e:
                 logger.error(f"Error executing action: {e}")
-                return jsonify({'status': 'error', 'message': str(e)}), 500
+                return jsonify({'error': str(e)}), 500
         else:
             # Provide stub response for standalone mode
             return jsonify({
@@ -449,12 +444,24 @@ def create_app(config_class=None):
 
     @app.route('/api/health', methods=['GET'])
     def health_check():
-        """Health check endpoint"""
+        """Health check endpoint with actual database connectivity testing"""
+        try:
+            # Test database connectivity
+            db.session.execute(text('SELECT 1'))
+            db_status = 'healthy'
+            db_message = 'Database connection successful'
+        except Exception as e:
+            db_status = 'error'
+            db_message = f'Database connection failed: {str(e)}'
+            logger.error(f"Database health check failed: {e}")
+        
         return jsonify({
-            'status': 'healthy',
+            'status': db_status,
+            'message': db_message,
             'sigma_mode': app.config.get('SIGMA_MODE', 'standalone'),
             'database_mode': app.config.get('DATABASE_MODE', 'sqlite'),
-            'sigma_enabled': hasattr(app, 'sigma_integration')
+            'sigma_enabled': hasattr(app, 'sigma_integration'),
+            'timestamp': datetime.utcnow().isoformat()
         })
 
     @app.route('/api/churn-prediction', methods=['GET'])
