@@ -46,29 +46,134 @@ const SigmaStatusPage = () => {
   // Auto-refresh functionality
   const [autoRefresh, setAutoRefresh] = React.useState(false);
   const [refreshInterval, setRefreshInterval] = React.useState(30000); // 30 seconds
+  const [lastRefreshTime, setLastRefreshTime] = React.useState(new Date());
+  const [notifications, setNotifications] = React.useState([]);
 
-  React.useEffect(() => {
-    let interval;
-    if (autoRefresh && refreshInterval > 0) {
-      interval = setInterval(() => {
-        refetchStatus();
-        refetchHealth();
-        refetchCount();
-      }, refreshInterval);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [autoRefresh, refreshInterval, refetchStatus, refetchHealth, refetchCount]);
+  // Update last refresh time when any refresh occurs
+  const updateRefreshTime = () => {
+    setLastRefreshTime(new Date());
+  };
+
+  // Add notification
+  const addNotification = (message, type = 'info') => {
+    const id = Date.now();
+    const notification = { id, message, type, timestamp: new Date() };
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  // Remove notification
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   // Manual refresh function
   const refreshAllData = () => {
+    updateRefreshTime();
+    addNotification('Refreshing all data...', 'info');
     refetchStatus();
     refetchCaps();
     refetchHealth();
     refetchUser();
     refetchCount();
   };
+
+  // Enhanced refresh function that also fetches current Sigma configuration
+  const refreshWithConfig = async () => {
+    try {
+      updateRefreshTime();
+      addNotification('Performing enhanced refresh with configuration update...', 'info');
+      // First get the current Sigma configuration to ensure we have the latest mode
+      const configResponse = await apiClient.getSigmaConfig();
+      console.log('Current Sigma config after refresh:', configResponse);
+      
+      // Then refresh all data with the updated configuration
+      await Promise.all([
+        refetchStatus(),
+        refetchCaps(),
+        refetchHealth(),
+        refetchUser(),
+        refetchCount()
+      ]);
+      
+      addNotification('Enhanced refresh completed successfully!', 'success');
+      
+      // Force a re-render by updating state
+      setAutoRefresh(prev => prev); // This triggers a re-render
+      
+    } catch (error) {
+      console.error('Error during enhanced refresh:', error);
+      addNotification(`Refresh failed: ${error.message}`, 'error');
+    }
+  };
+
+  // Mode-aware refresh that checks if configuration has changed
+  const smartRefresh = async () => {
+    try {
+      // Get current configuration
+      const currentConfig = await apiClient.getSigmaConfig();
+      
+      // Check if we need to refresh based on mode changes
+      const needsFullRefresh = !sigmaStatus || 
+                              sigmaStatus.sigma_mode !== currentConfig.sigma_mode ||
+                              sigmaStatus.database_mode !== currentConfig.database_mode;
+      
+      if (needsFullRefresh) {
+        console.log('Mode change detected, performing full refresh...');
+        addNotification('Mode change detected, performing full refresh...', 'warning');
+        await refreshWithConfig();
+      } else {
+        console.log('Performing standard refresh...');
+        addNotification('Performing standard refresh...', 'info');
+        refreshAllData();
+      }
+    } catch (error) {
+      console.error('Error during smart refresh:', error);
+      addNotification(`Smart refresh failed: ${error.message}`, 'error');
+      // Fallback to standard refresh
+      refreshAllData();
+    }
+  };
+
+  // Monitor for Sigma mode changes and refresh data accordingly
+  React.useEffect(() => {
+    if (sigmaStatus?.sigma_mode) {
+      console.log('Sigma mode detected:', sigmaStatus.sigma_mode);
+      // Refresh data when mode changes to ensure accurate display
+      const refreshForModeChange = async () => {
+        try {
+          addNotification(`Sigma mode changed to: ${sigmaStatus.sigma_mode}`, 'info');
+          await Promise.all([
+            refetchHealth(),
+            refetchUser(),
+            refetchCount()
+          ]);
+          addNotification('Data refreshed after mode change', 'success');
+        } catch (error) {
+          console.error('Error refreshing data after mode change:', error);
+          addNotification(`Failed to refresh data after mode change: ${error.message}`, 'error');
+        }
+      };
+      refreshForModeChange();
+    }
+  }, [sigmaStatus?.sigma_mode, refetchHealth, refetchUser, refetchCount]);
+
+  React.useEffect(() => {
+    let interval;
+    if (autoRefresh && refreshInterval > 0) {
+      interval = setInterval(() => {
+        // Use smart refresh for auto-refresh to detect mode changes
+        smartRefresh();
+      }, refreshInterval);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh, refreshInterval, smartRefresh]);
 
   // Debug logging
   React.useEffect(() => {
@@ -186,17 +291,57 @@ const SigmaStatusPage = () => {
 
   return (
     <Box>
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          {notifications.map((notification) => (
+            <Alert
+              key={notification.id}
+              severity={notification.type}
+              sx={{ mb: 1 }}
+              onClose={() => removeNotification(notification.id)}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => removeNotification(notification.id)}
+                >
+                  Dismiss
+                </Button>
+              }
+            >
+              <Typography variant="body2">
+                {notification.message}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {notification.timestamp.toLocaleTimeString()}
+              </Typography>
+            </Alert>
+          ))}
+        </Box>
+      )}
+      
       {/* Sigma Mode Toggle Component */}
       <SigmaModeToggle />
       
       {/* System Status Summary */}
       <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
         <CardContent>
-          <Box display="flex" alignItems="center" mb={2}>
-            <InfoIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" component="h2">
-              System Status Summary
-            </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <Box display="flex" alignItems="center">
+              <InfoIcon sx={{ mr: 1 }} />
+              <Typography variant="h6" component="h2">
+                System Status Summary
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={smartRefresh}
+              startIcon={<InfoIcon />}
+            >
+              Refresh Overview
+            </Button>
           </Box>
           
           <Grid container spacing={2}>
@@ -248,6 +393,51 @@ const SigmaStatusPage = () => {
               </Box>
             </Grid>
           </Grid>
+          
+          {/* Status Information */}
+          <Divider sx={{ my: 2 }} />
+          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Last Updated: {lastRefreshTime.toLocaleTimeString()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current Mode: {sigmaData.sigma_mode || 'standalone'} | Database: {sigmaData.database_mode || 'sqlite'}
+              </Typography>
+            </Box>
+            <Box display="flex" gap={1} alignItems="center">
+              <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                Interval:
+              </Typography>
+              <select
+                value={refreshInterval / 1000}
+                onChange={(e) => setRefreshInterval(parseInt(e.target.value) * 1000)}
+                style={{
+                  padding: '4px 8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value={10}>10s</option>
+                <option value={30}>30s</option>
+                <option value={60}>1m</option>
+                <option value={300}>5m</option>
+              </select>
+              <Chip
+                label={`${autoRefresh ? 'Auto' : 'Manual'} Refresh`}
+                color={autoRefresh ? 'success' : 'default'}
+                size="small"
+                variant="outlined"
+              />
+              <Chip
+                label={`${refreshInterval / 1000}s Interval`}
+                color="info"
+                size="small"
+                variant="outlined"
+              />
+            </Box>
+          </Box>
         </CardContent>
       </Card>
       
@@ -287,6 +477,14 @@ const SigmaStatusPage = () => {
               <Button
                 variant="outlined"
                 size="small"
+                onClick={smartRefresh}
+                sx={{ color: 'white', borderColor: 'white', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                Smart Refresh
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
                 onClick={refreshAllData}
                 sx={{ color: 'white', borderColor: 'white', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
               >
@@ -322,11 +520,25 @@ const SigmaStatusPage = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <StorageIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" component="h2">
-                  Database Connection
-                </Typography>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center">
+                  <StorageIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" component="h2">
+                    Database Connection
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    refetchHealth();
+                    refetchUser();
+                    refetchCount();
+                  }}
+                  startIcon={<StorageIcon />}
+                >
+                  Refresh DB
+                </Button>
               </Box>
               
               {healthData ? (
@@ -406,11 +618,24 @@ const SigmaStatusPage = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <CodeIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" component="h2">
-                  Sigma Framework Status
-                </Typography>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center">
+                  <CodeIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" component="h2">
+                    Sigma Framework Status
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    refetchStatus();
+                    refetchCaps();
+                  }}
+                  startIcon={<CodeIcon />}
+                >
+                  Refresh Sigma
+                </Button>
               </Box>
               
               {sigmaData ? (
@@ -469,11 +694,21 @@ const SigmaStatusPage = () => {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <SettingsIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" component="h2">
-                  Sigma Framework Capabilities
-                </Typography>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                <Box display="flex" alignItems="center">
+                  <SettingsIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" component="h2">
+                    Sigma Framework Capabilities
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => refetchCaps()}
+                  startIcon={<SettingsIcon />}
+                >
+                  Refresh Capabilities
+                </Button>
               </Box>
               
               {capabilitiesData ? (
