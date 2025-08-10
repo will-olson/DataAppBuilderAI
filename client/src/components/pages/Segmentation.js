@@ -1,15 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  fetchUserSegments 
-} from '../../services/api';
-
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
   Grid, 
-  Card, 
-  CardContent, 
-  LinearProgress,
+  Box,
+  ToggleButton,
+  ToggleButtonGroup,
+  Alert,
   Button
 } from '@mui/material';
 import { 
@@ -28,16 +25,47 @@ import {
   Line
 } from 'recharts';
 
+import useApi from '../../hooks/useApi';
+import apiClient from '../../services/api';
+import ChartContainer from '../common/ChartContainer';
+import MetricsCard from '../common/MetricsCard';
+import LoadingSpinner from '../common/LoadingSpinner';
+
 const Segmentation = () => {
-  const [segments, setSegments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [activeChart, setActiveChart] = useState('userCount');
+  
+  // Use the useApi hook for data fetching
+  const { 
+    data: segments, 
+    loading, 
+    error, 
+    execute: fetchSegments 
+  } = useApi(() => apiClient.getUserSegments(), { autoExecute: true });
 
-  // Chart color palette
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  // Handle errors gracefully
+  if (error) {
+    return (
+      <Container>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Error loading segmentation data: {error.message}
+        </Alert>
+        <Button 
+          variant="contained" 
+          onClick={fetchSegments}
+          sx={{ mt: 2 }}
+        >
+          Retry
+        </Button>
+      </Container>
+    );
+  }
 
-  // Color mapping for segments
+  // Show loading state
+  if (loading) {
+    return <LoadingSpinner message="Loading segmentation data..." />;
+  }
+
+  // Chart color palette - used for dynamic color assignment
   const getSegmentColor = (segmentName) => {
     const colorMap = {
       'High Engagement': '#4caf50',  // Green
@@ -47,340 +75,239 @@ const Segmentation = () => {
     return colorMap[segmentName] || '#2196f3'; // Default blue
   };
 
-  // Fetch segments on component mount
-  useEffect(() => {
-    const loadSegments = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchUserSegments();
-        
-        // Validate and process data
-        if (Array.isArray(data)) {
-          setSegments(data);
-        } else {
-          throw new Error('Invalid data format');
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching segments:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    loadSegments();
-  }, []);
-
-  // Render loading state
-  if (loading) {
-    return (
-      <Container>
-        <Typography variant="h4">Loading Segments...</Typography>
-        <LinearProgress />
-      </Container>
-    );
-  }
-
-  // Render error state
-  if (error) {
-    return (
-      <Container>
-        <Typography variant="h4" color="error">
-          Error Loading Segments
-        </Typography>
-        <Typography variant="body1">{error}</Typography>
-      </Container>
-    );
-  }
-
   // Prepare data for charts
-  const segmentChartData = segments.map(segment => ({
+  const segmentChartData = segments ? segments.map(segment => ({
     name: segment.name,
     userCount: segment.userCount,
     avgLTV: segment.avgLTV,
-    churnRisk: segment.avgChurnRisk * 100
-  }));
+    avgChurnRisk: segment.avgChurnRisk * 100
+  })) : [];
 
-  // Calculate key metrics
-  const totalUsers = segments.reduce((sum, segment) => sum + segment.userCount, 0);
-  const totalLTV = segments.reduce((sum, segment) => sum + (segment.userCount * segment.avgLTV), 0);
-  const averageLTV = totalLTV / totalUsers;
-  const averageChurnRisk = segments.reduce((sum, segment) => sum + segment.avgChurnRisk, 0) / segments.length * 100;
+  // Calculate summary metrics
+  const totalUsers = segments ? segments.reduce((sum, segment) => sum + segment.userCount, 0) : 0;
+  const highEngagementUsers = segments ? segments.find(s => s.name === 'High Engagement')?.userCount || 0 : 0;
+  const highEngagementPercentage = totalUsers > 0 ? (highEngagementUsers / totalUsers) * 100 : 0;
+  const averageLTV = segments && segments.length > 0 
+    ? segments.reduce((sum, segment) => sum + (segment.userCount * segment.avgLTV), 0) / totalUsers 
+    : 0;
+
+  const handleChartChange = (event, newChart) => {
+    if (newChart !== null) {
+      setActiveChart(newChart);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchSegments();
+  };
+
+  const handleDownloadChart = () => {
+    // Implementation for chart download
+    console.log('Downloading chart data...');
+  };
+
+  const renderChart = () => {
+    switch (activeChart) {
+      case 'userCount':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={segmentChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="userCount" fill="#8884d8" name="User Count" />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      
+      case 'avgLTV':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={segmentChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+              <Legend />
+              <Bar dataKey="avgLTV" fill="#82ca9d" name="Average LTV" />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      
+      case 'avgChurnRisk':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={segmentChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+              <Legend />
+              <Bar dataKey="avgChurnRisk" fill="#ff7300" name="Churn Risk %" />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      
+      case 'distribution':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={segmentChartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="userCount"
+              >
+                {segmentChartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getSegmentColor(entry.name)} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      
+      case 'combined':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={segmentChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip />
+              <Legend />
+              <Bar yAxisId="left" dataKey="userCount" fill="#8884d8" name="User Count" />
+              <Line yAxisId="right" type="monotone" dataKey="avgLTV" stroke="#82ca9d" name="Average LTV" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
-        User Segments Analysis
+    <Container maxWidth="xl">
+      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+        User Segmentation Analysis
       </Typography>
 
-      {/* Segmentation-Specific Key Metrics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Revenue Potential</Typography>
-              <Typography variant="h4">
-                ${(segments.reduce((sum, segment) => 
-                  sum + (segment.userCount * segment.avgLTV), 0)).toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Projected Annual Segment Revenue
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Highest potential segment: {
-                  segments.reduce((max, segment) => 
-                    (segment.userCount * segment.avgLTV) > (max.userCount * max.avgLTV) ? segment : max
-                  ).name
-                }
-            </Typography>
-          </CardContent>
-          </Card>
+      {/* Summary Metrics */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricsCard
+            title="Total Users"
+            value={totalUsers}
+            subtitle="Across all segments"
+            color="primary"
+            size="medium"
+          />
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Segment Concentration</Typography>
-              <Typography variant="h4">
-                {((segments.reduce((max, segment) => 
-                  Math.max(max, segment.userCount / totalUsers), 0) * 100).toFixed(2))}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Largest segment's proportion of total users
-              </Typography>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricsCard
+            title="High Engagement"
+            value={`${highEngagementPercentage.toFixed(1)}%`}
+            subtitle="Of total users"
+            color="success"
+            size="medium"
+          />
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Segment LTV Variance</Typography>
-              <Typography variant="h4">
-                ${(Math.max(...segments.map(s => s.avgLTV)) - 
-                  Math.min(...segments.map(s => s.avgLTV))).toFixed(2)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Difference between highest and lowest segment LTV
-              </Typography>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricsCard
+            title="Average LTV"
+            value={`$${averageLTV.toFixed(2)}`}
+            subtitle="Per user"
+            color="info"
+            size="medium"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricsCard
+            title="Segments"
+            value={segments ? segments.length : 0}
+            subtitle="Active segments"
+            color="secondary"
+            size="medium"
+          />
         </Grid>
       </Grid>
 
-      {/* Chart Selection Buttons */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item>
-          <Button 
-            variant={activeChart === 'userCount' ? 'contained' : 'outlined'}
-            onClick={() => setActiveChart('userCount')}
-          >
+      {/* Chart Controls */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+        <ToggleButtonGroup
+          value={activeChart}
+          exclusive
+          onChange={handleChartChange}
+          aria-label="chart type"
+          size="small"
+        >
+          <ToggleButton value="userCount" aria-label="user count">
             User Count
-          </Button>
-        </Grid>
-        <Grid item>
-          <Button 
-            variant={activeChart === 'ltv' ? 'contained' : 'outlined'}
-            onClick={() => setActiveChart('ltv')}
-          >
-            Lifetime Value
-          </Button>
-        </Grid>
-        <Grid item>
-          <Button 
-            variant={activeChart === 'churnRisk' ? 'contained' : 'outlined'}
-            onClick={() => setActiveChart('churnRisk')}
-          >
+          </ToggleButton>
+          <ToggleButton value="avgLTV" aria-label="average ltv">
+            Average LTV
+          </ToggleButton>
+          <ToggleButton value="avgChurnRisk" aria-label="churn risk">
             Churn Risk
-          </Button>
-        </Grid>
-      </Grid>
+          </ToggleButton>
+          <ToggleButton value="distribution" aria-label="distribution">
+            Distribution
+          </ToggleButton>
+          <ToggleButton value="combined" aria-label="combined">
+            Combined
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
-      {/* Visualization Grid */}
+      {/* Main Chart */}
       <Grid container spacing={3}>
-        {/* Segment Distribution Pie Chart */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5">Segment Revenue Contribution</Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={segments.map(segment => ({
-                  name: segment.name,
-                  revenue: segment.userCount * segment.avgLTV,
-                  userCount: segment.userCount
-                }))}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis 
-                    label={{ 
-                      value: '', 
-                      angle: -90, 
-                      position: 'insideLeft' 
-                    }} 
-                  />
-                  <Tooltip 
-                    formatter={(value, name, props) => [
-                      `$${value.toLocaleString()}`, 
-                      `${props.payload.name} Revenue`
-                    ]}
-                    labelFormatter={(label) => `Segment: ${label}`}
-                  />
-                  <Legend />
-                  <Bar 
-                    dataKey="revenue" 
-                    fill="#8884d8"
-                    name="Revenue"
-                  >
-                    {segments.map((segment, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]} 
-                      />
-                    ))}
-                  </Bar>
-                  <Line
-                    type="monotone"
-                    dataKey="userCount"
-                    stroke="#ff7300"
-                    name="User Count"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Segment Metrics Composed Chart */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5">Segment Performance</Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={segmentChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis 
-                    label={{ 
-                      value: activeChart === 'userCount' ? 'Number of Users' : 
-                             activeChart === 'ltv' ? 'Lifetime Value ($)' : 
-                             'Churn Risk (%)', 
-                      angle: -90, 
-                      position: 'insideLeft' 
-                    }} 
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Bar 
-                    dataKey={
-                      activeChart === 'userCount' ? 'userCount' : 
-                      activeChart === 'ltv' ? 'avgLTV' : 
-                      'churnRisk'
-                    } 
-                    fill="#8884d8" 
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={
-                      activeChart === 'userCount' ? 'userCount' : 
-                      activeChart === 'ltv' ? 'avgLTV' : 
-                      'churnRisk'
-                    }
-                    stroke="#ff7300"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        <Grid item xs={12}>
+          <ChartContainer
+            title={`${activeChart.charAt(0).toUpperCase() + activeChart.slice(1)} Analysis`}
+            subtitle="User segmentation insights and trends"
+            loading={loading}
+            error={error}
+            onRefresh={handleRefresh}
+            onDownload={handleDownloadChart}
+            height={500}
+          >
+            {renderChart()}
+          </ChartContainer>
         </Grid>
       </Grid>
 
-      {/* Segment Details Grid */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
-        {segments.map((segment, index) => (
-          <Grid item xs={12} md={4} key={index}>
-            <Card 
-              sx={{ 
-                height: '100%', 
-                borderLeft: `5px solid ${getSegmentColor(segment.name)}` 
-              }}
-            >
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  {segment.name} Segment
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary">
-                  User Count: {segment.userCount}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary">
-                  Average Lifetime Value: ${segment.avgLTV.toFixed(2)}
-                </Typography>
-                
-                <Typography variant="body2" color="text.secondary">
-                  Churn Risk: {(segment.avgChurnRisk * 100).toFixed(2)}%
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Comprehensive Segment Insights */}
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6">Segment Analysis Insights</Typography>
+      {/* Segment Details Table */}
+      {segments && segments.length > 0 && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Segment Details
+          </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1">Segment Characteristics</Typography>
-              <Typography variant="body2">
-                Our analysis reveals {segments.length} distinct user segments, 
-                ranging from {segments[0].name} to {segments[segments.length - 1].name}. 
-                The most populous segment represents {
-                  (segments.reduce((max, segment) => 
-                    Math.max(max, segment.userCount / totalUsers), 0) * 100
-                  ).toFixed(2)
-                }% of our total user base.
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1">Performance Variation</Typography>
-              <Typography variant="body2">
-                Lifetime Value (LTV) shows significant variation across segments:
-                • Highest LTV Segment: ${Math.max(...segments.map(s => s.avgLTV)).toFixed(2)}
-                • Lowest LTV Segment: ${Math.min(...segments.map(s => s.avgLTV)).toFixed(2)}
-                • Overall LTV Spread: ${
-                  (Math.max(...segments.map(s => s.avgLTV)) - 
-                  Math.min(...segments.map(s => s.avgLTV))).toFixed(2)
-                }
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle1">Churn Risk Insights</Typography>
-              <Typography variant="body2">
-                Churn risk varies significantly across segments:
-                • Highest Risk Segment: {
-                  segments.reduce((max, segment) => 
-                    segment.avgChurnRisk > max.avgChurnRisk ? segment : max
-                  ).name
-                } with {
-                  (segments.reduce((max, segment) => 
-                    segment.avgChurnRisk > max.avgChurnRisk ? segment : max
-                  ).avgChurnRisk * 100).toFixed(2)
-                }% churn probability
-                • Lowest Risk Segment: {
-                  segments.reduce((min, segment) => 
-                    segment.avgChurnRisk < min.avgChurnRisk ? segment : min
-                  ).name
-                } with {
-                  (segments.reduce((min, segment) => 
-                    segment.avgChurnRisk < min.avgChurnRisk ? segment : min
-                  ).avgChurnRisk * 100).toFixed(2)
-                }% churn probability
-              </Typography>
-            </Grid>
+            {segments.map((segment, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <MetricsCard
+                  title={segment.name}
+                  value={segment.userCount}
+                  subtitle={`LTV: $${segment.avgLTV.toFixed(2)} | Risk: ${(segment.avgChurnRisk * 100).toFixed(1)}%`}
+                  color={segment.name === 'High Engagement' ? 'success' : 
+                         segment.name === 'Medium Engagement' ? 'warning' : 'error'}
+                  variant="outlined"
+                  size="small"
+                />
+              </Grid>
+            ))}
           </Grid>
-        </CardContent>
-      </Card>
+        </Box>
+      )}
     </Container>
   );
 };

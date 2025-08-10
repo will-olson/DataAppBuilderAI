@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
-  Card, 
-  CardContent,
-  CircularProgress,
   Grid,
   Button
 } from '@mui/material';
@@ -16,63 +13,26 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend,
-  PieChart, 
-  Pie, 
   Cell,
   ResponsiveContainer
 } from 'recharts';
-import { fetchFeatureUsageAnalytics } from '../../services/api';
+import useApi from '../../hooks/useApi';
+import apiClient from '../../services/api';
+import LoadingSpinner from '../common/LoadingSpinner';
+import ChartContainer from '../common/ChartContainer';
 
 const FeatureUsagePage = () => {
-  const [featureData, setFeatureData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [activeChart, setActiveChart] = useState('topFeatures');
 
   // Chart color palette
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  useEffect(() => {
-    const fetchFeatureData = async () => {
-      try {
-        console.log('Fetching feature usage data');
-        setLoading(true);
-        
-        const data = await fetchFeatureUsageAnalytics();
-        
-        console.log('Received feature usage data:', data);
-        
-        // Validate data structure
-        if (!data) {
-          throw new Error('No data received');
-        }
-        
-        // Ensure both keys exist with default empty arrays
-        const processedData = {
-          featureUsageBySegment: data.featureUsageBySegment || [],
-          topFeatures: data.topFeatures || []
-        };
-        
-        setFeatureData(processedData);
-        setLoading(false);
-      } catch (error) {
-        console.error('Feature usage fetch error', error);
-        setError(error);
-        setLoading(false);
-      }
-    };
-
-    fetchFeatureData();
-  }, []);
+  // Use the useApi hook for data fetching
+  const { data: featureData, loading, error, execute: fetchFeatureData } = useApi(() => apiClient.getFeatureUsage(), { autoExecute: true });
 
   // Loading state
   if (loading) {
-    return (
-      <Container>
-        <CircularProgress />
-        <Typography>Loading Feature Usage...</Typography>
-      </Container>
-    );
+    return <LoadingSpinner message="Loading Feature Usage..." />;
   }
 
   // Error state
@@ -87,9 +47,7 @@ const FeatureUsagePage = () => {
   }
 
   // Ensure featureData exists and has expected properties
-  if (!featureData || 
-      !Array.isArray(featureData.featureUsageBySegment) || 
-      !Array.isArray(featureData.topFeatures)) {
+  if (!featureData || !Array.isArray(featureData)) {
     return (
       <Container>
         <Typography>No feature usage data available</Typography>
@@ -98,18 +56,68 @@ const FeatureUsagePage = () => {
   }
 
   // Prepare data for charts
-  const topFeaturesChartData = featureData.topFeatures.map(feature => ({
-    name: feature.name,
-    usage: feature.usagePercentage * 100
+  const topFeaturesChartData = featureData.map(feature => ({
+    name: feature.feature,
+    usage: (feature.userCount / featureData.reduce((sum, f) => sum + f.userCount, 0)) * 100
   }));
 
-  const segmentFeatureUsageData = featureData.featureUsageBySegment.flatMap(segment => 
-    segment.features.map(feature => ({
-      segment: segment.segment,
-      feature: feature.name,
-      usage: feature.usagePercentage * 100
-    }))
-  );
+  const segmentFeatureUsageData = featureData.map(feature => ({
+    segment: 'All Users',
+    feature: feature.feature,
+    usage: (feature.userCount / featureData.reduce((sum, f) => sum + f.userCount, 0)) * 100
+  }));
+
+  const engagementByFeatureData = featureData.map(feature => ({
+    feature: feature.feature,
+    engagement: feature.avgEngagement * 100,
+    ltv: feature.avgLTV
+  }));
+
+  const handleRefresh = () => {
+    fetchFeatureData();
+  };
+
+  const renderChart = () => {
+    if (activeChart === 'topFeatures') {
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={topFeaturesChartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="usage" fill="#8884d8">
+              {topFeaturesChartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (activeChart === 'segmentUsage') {
+      return (
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={segmentFeatureUsageData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="feature" />
+            <YAxis label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="usage" fill="#8884d8">
+              {segmentFeatureUsageData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <Container>
@@ -136,50 +144,16 @@ const FeatureUsagePage = () => {
       </Grid>
 
       {/* Chart Container */}
-      <Card>
-        <CardContent>
-          {activeChart === 'topFeatures' && (
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={topFeaturesChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip 
-                  formatter={(value) => [`${value.toFixed(2)}%`, 'Usage']}
-                />
-                <Legend />
-                <Bar dataKey="usage" fill="#8884d8">
-                  {topFeaturesChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-
-          {activeChart === 'segmentUsage' && (
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={segmentFeatureUsageData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="feature" />
-                <YAxis label={{ value: 'Usage (%)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip 
-                  formatter={(value, name, props) => [
-                    `${value.toFixed(2)}%`, 
-                    `${props.payload.feature} in ${props.payload.segment}`
-                  ]}
-                />
-                <Legend />
-                <Bar dataKey="usage" fill="#8884d8">
-                  {segmentFeatureUsageData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+      <ChartContainer 
+        title={`${activeChart === 'topFeatures' ? 'Top Features' : 'Segment Feature Usage'} Analysis`}
+        subtitle="Feature usage analytics and insights"
+        loading={loading}
+        error={error}
+        onRefresh={handleRefresh}
+        height={500}
+      >
+        {renderChart()}
+      </ChartContainer>
     </Container>
   );
 };

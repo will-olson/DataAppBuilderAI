@@ -1,6 +1,6 @@
 // src/components/journey/ChurnRiskForecaster.js
 import React, { useState, useEffect } from 'react';
-import { fetchUserJourneyData } from '../../services/api';
+import apiClient from '../../services/api';
 
 const ChurnRiskForecaster = () => {
   const [churnData, setChurnData] = useState({
@@ -14,7 +14,7 @@ const ChurnRiskForecaster = () => {
   useEffect(() => {
     const fetchChurnData = async () => {
       try {
-        const journeyData = await fetchUserJourneyData();
+        const journeyData = await apiClient.getUserJourney();
         
         if (journeyData) {
           // Process churn risk data

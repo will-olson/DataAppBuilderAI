@@ -5,7 +5,7 @@ Integrates Sigma compatibility with the existing Flask application
 
 from typing import Dict, Any, Optional
 import logging
-from flask import current_app, request
+from flask import current_app, request, jsonify
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class SigmaIntegration:
     def _init_sigma_layer(self):
         """Initialize Sigma compatibility layer"""
         try:
-            from .sigma import create_sigma_layer
+            from sigma import create_sigma_layer
             config_obj = self.app.config
             self.sigma_layer = create_sigma_layer(config_obj)
             logger.info("Sigma layer initialized successfully")
@@ -47,7 +47,7 @@ class SigmaIntegration:
     def _init_database_adapter(self):
         """Initialize database adapter"""
         try:
-            from .database import create_database_adapter
+            from database import create_database_adapter
             config_obj = self.app.config
             self.database_adapter = create_database_adapter(config_obj)
             logger.info("Database adapter initialized successfully")
@@ -71,10 +71,10 @@ class SigmaIntegration:
                     'sigma_layer': self.sigma_layer.get_mode_info() if self.sigma_layer else None,
                     'database_adapter': self.database_adapter.get_capabilities() if self.database_adapter else None
                 }
-                return {'status': 'success', 'data': status}
+                return jsonify({'status': 'success', 'data': status})
             except Exception as e:
                 logger.error(f"Error getting Sigma status: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Sigma Framework Capabilities
         @self.app.route('/api/sigma/capabilities', methods=['GET'])
@@ -83,12 +83,12 @@ class SigmaIntegration:
             try:
                 if self.sigma_layer:
                     capabilities = self.sigma_layer.get_capabilities()
-                    return {'status': 'success', 'data': capabilities}
+                    return jsonify({'status': 'success', 'data': capabilities})
                 else:
-                    return {'status': 'error', 'message': 'Sigma layer not available'}, 404
+                    return jsonify({'status': 'error', 'message': 'Sigma layer not available'}), 404
             except Exception as e:
                 logger.error(f"Error getting Sigma capabilities: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Database Health Check
         @self.app.route('/api/database/health', methods=['GET'])
@@ -97,12 +97,12 @@ class SigmaIntegration:
             try:
                 if self.database_adapter:
                     health = self.database_adapter.health_check()
-                    return {'status': 'success', 'data': health}
+                    return jsonify({'status': 'success', 'data': health})
                 else:
-                    return {'status': 'error', 'message': 'Database adapter not available'}, 404
+                    return jsonify({'status': 'error', 'message': 'Database adapter not available'}), 404
             except Exception as e:
                 logger.error(f"Error getting database health: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Sigma Input Tables Management
         @self.app.route('/api/sigma/input-tables', methods=['GET', 'POST'])
@@ -110,23 +110,23 @@ class SigmaIntegration:
             """Manage Sigma input tables"""
             try:
                 if not self.sigma_layer or not self.sigma_layer.input_tables:
-                    return {'status': 'error', 'message': 'Input tables not available'}, 404
+                    return jsonify({'status': 'error', 'message': 'Input tables not available'}), 404
                 
                 if request.method == 'GET':
                     tables = self.sigma_layer.input_tables.list_tables()
-                    return {'status': 'success', 'data': tables}
+                    return jsonify({'status': 'success', 'data': tables})
                 else:
                     # POST - Create new table
                     table_config = request.get_json()
                     if not table_config:
-                        return {'status': 'error', 'message': 'No table configuration provided'}, 400
+                        return jsonify({'status': 'error', 'message': 'No table configuration provided'}), 400
                     
                     table_id = self.sigma_layer.input_tables.create_table(table_config)
-                    return {'status': 'success', 'data': {'table_id': table_id}}
+                    return jsonify({'status': 'success', 'data': {'table_id': table_id}})
                     
             except Exception as e:
                 logger.error(f"Error managing input tables: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Sigma Layout Elements Management
         @self.app.route('/api/sigma/layout-elements', methods=['GET', 'POST'])
@@ -134,17 +134,17 @@ class SigmaIntegration:
             """Manage Sigma layout elements"""
             try:
                 if not self.sigma_layer or not self.sigma_layer.layout_elements:
-                    return {'status': 'error', 'message': 'Layout elements not available'}, 404
+                    return jsonify({'status': 'error', 'message': 'Layout elements not available'}), 404
                 
                 if request.method == 'GET':
                     element_type = request.args.get('type')
                     elements = self.sigma_layer.layout_elements.list_elements(element_type)
-                    return {'status': 'success', 'data': elements}
+                    return jsonify({'status': 'success', 'data': elements})
                 else:
                     # POST - Create new element
                     element_config = request.get_json()
                     if not element_config:
-                        return {'status': 'error', 'message': 'No element configuration provided'}, 400
+                        return jsonify({'status': 'error', 'message': 'No element configuration provided'}), 400
                     
                     element_type = element_config.get('type')
                     if element_type == 'container':
@@ -158,13 +158,13 @@ class SigmaIntegration:
                     elif element_type == 'chart':
                         element_id = self.sigma_layer.layout_elements.create_chart(element_config)
                     else:
-                        return {'status': 'error', 'message': f'Unsupported element type: {element_type}'}, 400
+                        return jsonify({'status': 'error', 'message': f'Unsupported element type: {element_type}'}), 400
                     
-                    return {'status': 'success', 'data': {'element_id': element_id}}
+                    return jsonify({'status': 'success', 'data': {'element_id': element_id}})
                     
             except Exception as e:
                 logger.error(f"Error managing layout elements: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Sigma Actions Management
         @self.app.route('/api/sigma/actions', methods=['GET', 'POST'])
@@ -172,23 +172,23 @@ class SigmaIntegration:
             """Manage Sigma actions"""
             try:
                 if not self.sigma_layer or not self.sigma_layer.actions:
-                    return {'status': 'error', 'message': 'Actions not available'}, 404
+                    return jsonify({'status': 'error', 'message': 'Actions not available'}), 404
                 
                 if request.method == 'GET':
                     actions = self.sigma_layer.actions.list_actions()
-                    return {'status': 'success', 'data': actions}
+                    return jsonify({'status': 'success', 'data': actions})
                 else:
                     # POST - Create new action
                     action_config = request.get_json()
                     if not action_config:
-                        return {'status': 'error', 'message': 'No action configuration provided'}, 400
+                        return jsonify({'status': 'error', 'message': 'No action configuration provided'}), 400
                     
                     action_id = self.sigma_layer.actions.create_action(action_config)
-                    return {'status': 'success', 'data': {'action_id': action_id}}
+                    return jsonify({'status': 'success', 'data': {'action_id': action_id}})
                     
             except Exception as e:
                 logger.error(f"Error managing actions: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Execute Sigma Action
         @self.app.route('/api/sigma/actions/<action_id>/execute', methods=['POST'])
@@ -196,15 +196,15 @@ class SigmaIntegration:
             """Execute a Sigma action"""
             try:
                 if not self.sigma_layer or not self.sigma_layer.actions:
-                    return {'status': 'error', 'message': 'Actions not available'}, 404
+                    return jsonify({'status': 'error', 'message': 'Actions not available'}), 404
                 
                 context = request.get_json() or {}
                 result = self.sigma_layer.actions.execute_action(action_id, context)
-                return {'status': 'success', 'data': result}
+                return jsonify({'status': 'success', 'data': result})
                 
             except Exception as e:
                 logger.error(f"Error executing action {action_id}: {e}")
-                return {'status': 'error', 'message': str(e)}, 500
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         logger.info("Sigma routes registered successfully")
     

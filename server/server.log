@@ -1,0 +1,43 @@
+Registered Routes:
+static: /static/<path:filename>
+get_sigma_status: /api/sigma/status
+get_sigma_capabilities: /api/sigma/capabilities
+get_database_health: /api/database/health
+manage_input_tables: /api/sigma/input-tables
+manage_layout_elements: /api/sigma/layout-elements
+manage_actions: /api/sigma/actions
+execute_action: /api/sigma/actions/<action_id>/execute
+get_user_segments: /api/segments
+get_user_journey: /api/user-journey
+get_personalization: /api/personalization
+health_check: /api/health
+get_churn_prediction: /api/churn-prediction
+get_referral_insights: /api/referral-insights
+get_raw_user_data: /api/raw-user-data
+ai_insights: /api/ai-insights
+get_feature_usage: /api/feature-usage
+predictive_revenue_forecast: /api/revenue-forecast
+Registered Routes:
+static: /static/<path:filename>
+get_sigma_status: /api/sigma/status
+get_sigma_capabilities: /api/sigma/capabilities
+get_database_health: /api/database/health
+manage_input_tables: /api/sigma/input-tables
+manage_layout_elements: /api/sigma/layout-elements
+manage_actions: /api/sigma/actions
+execute_action: /api/sigma/actions/<action_id>/execute
+get_user_segments: /api/segments
+get_user_journey: /api/user-journey
+get_personalization: /api/personalization
+health_check: /api/health
+get_churn_prediction: /api/churn-prediction
+get_referral_insights: /api/referral-insights
+get_raw_user_data: /api/raw-user-data
+ai_insights: /api/ai-insights
+get_feature_usage: /api/feature-usage
+predictive_revenue_forecast: /api/revenue-forecast
+ * Serving Flask app 'app'
+ * Debug mode: on
+Address already in use
+Port 5000 is in use by another program. Either identify and stop that program, or start the server with a different port.
+On macOS, try disabling the 'AirPlay Receiver' service from System Preferences -> General -> AirDrop & Handoff.

@@ -1,6 +1,6 @@
 // src/components/journey/UserJourneyPredictor.js
 import React, { useState, useEffect } from 'react';
-import { fetchUserJourneyData } from '../../services/api';
+import apiClient from '../../services/api';
 
 const UserJourneyPredictor = () => {
   const [journeyData, setJourneyData] = useState({
@@ -14,7 +14,7 @@ const UserJourneyPredictor = () => {
   useEffect(() => {
     const fetchJourneyData = async () => {
       try {
-        const data = await fetchUserJourneyData();
+        const data = await apiClient.getUserJourney();
         
         if (data) {
           // Process journey data with additional insights

@@ -100,7 +100,7 @@ const UserDataTable = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ 
-    key: 'lifetime_value', 
+    key: 'lifetimeValue', 
     direction: 'desc' 
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -117,9 +117,9 @@ const UserDataTable = ({
     { key: 'uuid', label: 'UUID', type: 'string' },
 
     // Account Metadata
-    { key: 'account_created', label: 'Account Created', type: 'datetime' },
-    { key: 'last_login', label: 'Last Login', type: 'datetime' },
-    { key: 'account_age_days', label: 'Account Age (Days)', type: 'number' },
+    { key: 'accountCreated', label: 'Account Created', type: 'datetime' },
+    { key: 'lastLogin', label: 'Last Login', type: 'datetime' },
+    { key: 'accountAgeDays', label: 'Account Age (Days)', type: 'number' },
 
     // Demographic Insights
     { key: 'age', label: 'Age', type: 'number' },
@@ -129,47 +129,47 @@ const UserDataTable = ({
     { key: 'timezone', label: 'Timezone', type: 'string' },
 
     // Engagement Metrics
-    { key: 'avg_visit_time', label: 'Avg Visit Time', type: 'number' },
-    { key: 'total_sessions', label: 'Total Sessions', type: 'number' },
-    { key: 'session_frequency', label: 'Session Frequency', type: 'number' },
+    { key: 'avgVisitTime', label: 'Avg Visit Time', type: 'number' },
+    { key: 'totalSessions', label: 'Total Sessions', type: 'number' },
+    { key: 'sessionFrequency', label: 'Session Frequency', type: 'number' },
 
     // Communication Engagement
-    { key: 'last_email_open', label: 'Last Email Open', type: 'datetime' },
-    { key: 'last_email_click', label: 'Last Email Click', type: 'datetime' },
-    { key: 'email_open_rate', label: 'Email Open Rate', type: 'percentage' },
-    { key: 'email_click_rate', label: 'Email Click Rate', type: 'percentage' },
+    { key: 'lastEmailOpen', label: 'Last Email Open', type: 'datetime' },
+    { key: 'lastEmailClick', label: 'Last Email Click', type: 'datetime' },
+    { key: 'emailOpenRate', label: 'Email Open Rate', type: 'percentage' },
+    { key: 'emailClickRate', label: 'Email Click Rate', type: 'percentage' },
 
     // Product Interaction
-    { key: 'last_app_login', label: 'Last App Login', type: 'datetime' },
-    { key: 'last_app_click', label: 'Last App Click', type: 'datetime' },
-    { key: 'last_completed_action', label: 'Last Completed Action', type: 'string' },
+    { key: 'lastAppLogin', label: 'Last App Login', type: 'datetime' },
+    { key: 'lastAppClick', label: 'Last App Click', type: 'datetime' },
+    { key: 'lastCompletedAction', label: 'Last Completed Action', type: 'string' },
 
     // Conversion & Revenue Metrics
     { key: 'plan', label: 'Plan', type: 'string' },
-    { key: 'plan_start_date', label: 'Plan Start Date', type: 'datetime' },
-    { key: 'lifetime_value', label: 'Lifetime Value', type: 'currency' },
-    { key: 'total_purchases', label: 'Total Purchases', type: 'number' },
-    { key: 'average_purchase_value', label: 'Avg Purchase Value', type: 'currency' },
+    { key: 'planStartDate', label: 'Plan Start Date', type: 'datetime' },
+    { key: 'lifetimeValue', label: 'Lifetime Value', type: 'currency' },
+    { key: 'totalPurchases', label: 'Total Purchases', type: 'number' },
+    { key: 'averagePurchaseValue', label: 'Avg Purchase Value', type: 'currency' },
 
     // Retention Indicators
-    { key: 'churn_risk', label: 'Churn Risk', type: 'percentage' },
-    { key: 'engagement_score', label: 'Engagement Score', type: 'percentage' },
+    { key: 'churnRisk', label: 'Churn Risk', type: 'percentage' },
+    { key: 'engagementScore', label: 'Engagement Score', type: 'percentage' },
 
     // Personalization Attributes
-    { key: 'preferred_content_type', label: 'Content Preference', type: 'string' },
-    { key: 'communication_preference', label: 'Communication Preference', type: 'string' },
-    { key: 'notification_settings', label: 'Notification Settings', type: 'json' },
+    { key: 'preferredContentType', label: 'Content Preference', type: 'string' },
+    { key: 'communicationPreference', label: 'Communication Preference', type: 'string' },
+    { key: 'notificationSettings', label: 'Notification Settings', type: 'json' },
 
     // Feature Usage
-    { key: 'feature_usage_json', label: 'Feature Usage', type: 'json' },
+    { key: 'featureUsageJson', label: 'Feature Usage', type: 'json' },
 
     // Referral & Growth
-    { key: 'referral_source', label: 'Referral Source', type: 'string' },
-    { key: 'referral_count', label: 'Referral Count', type: 'number' },
+    { key: 'referralSource', label: 'Referral Source', type: 'string' },
+    { key: 'referralCount', label: 'Referral Count', type: 'number' },
 
     // Compliance & Privacy
-    { key: 'marketing_consent', label: 'Marketing Consent', type: 'boolean' },
-    { key: 'last_consent_update', label: 'Last Consent Update', type: 'datetime' }
+    { key: 'marketingConsent', label: 'Marketing Consent', type: 'boolean' },
+    { key: 'lastConsentUpdate', label: 'Last Consent Update', type: 'datetime' }
   ];
 
   // Initialize visible columns on first render

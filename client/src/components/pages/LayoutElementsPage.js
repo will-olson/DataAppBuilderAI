@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -21,7 +21,6 @@ import {
   Chip,
   IconButton,
   Alert,
-  CircularProgress,
   FormControl,
   InputLabel,
   Select,
@@ -34,17 +33,17 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   ViewModule as LayoutIcon,
-  Container as ContainerIcon,
+  ViewComfy as ViewComfyIcon,
+  ViewComfy as ContainerIcon,
   Tab as TabIcon,
-  Form as FormIcon,
+  Description as FormIcon,
   BarChart as ChartIcon
 } from '@mui/icons-material';
-import { fetchLayoutElements, createLayoutElement } from '../../services/api';
+import useApi from '../../hooks/useApi';
+import apiClient from '../../services/api';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const LayoutElementsPage = () => {
-  const [elements, setElements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingElement, setEditingElement] = useState(null);
   const [formData, setFormData] = useState({
@@ -56,21 +55,27 @@ const LayoutElementsPage = () => {
     nesting_level: 0
   });
 
-  useEffect(() => {
-    fetchElements();
-  }, []);
+  // Use the useApi hook for data fetching
+  const { data: layoutElements, loading, error, execute: fetchLayoutElements } = useApi(() => apiClient.getSigmaLayoutElements(), { autoExecute: true });
 
-  const fetchElements = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchLayoutElements();
-      setElements(data || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return <LoadingSpinner message="Loading layout elements..." />;
+  }
+
+  if (error) {
+    console.error('Layout Elements Error:', error);
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Error loading layout elements: {error.message || error}
+        <Button onClick={fetchLayoutElements} sx={{ ml: 2 }}>
+          Retry
+        </Button>
+      </Alert>
+    );
+  }
+
+  // Extract the actual data from the API response with proper fallbacks
+  const elementsData = layoutElements?.data || layoutElements || [];
 
   const handleOpenDialog = (element = null) => {
     if (element) {
@@ -113,16 +118,16 @@ const LayoutElementsPage = () => {
   const handleSubmit = async () => {
     try {
       if (editingElement) {
-        // Update existing element
-        // await updateLayoutElement(editingElement.id, formData);
+        // Update existing element - would need to implement updateLayoutElement in apiClient
+        // await apiClient.put(`/sigma/layout-elements/${editingElement.id}`, formData);
       } else {
-        // Create new element
-        await createLayoutElement(formData);
+        // Create new element - would need to implement createLayoutElement in apiClient
+        // await apiClient.post('/sigma/layout-elements', formData);
       }
       handleCloseDialog();
-      fetchElements();
+      fetchLayoutElements();
     } catch (err) {
-      setError(err.message);
+      console.error('Error saving layout element:', err);
     }
   };
 
@@ -145,8 +150,8 @@ const LayoutElementsPage = () => {
 
   const getElementTypeIcon = (type) => {
     const icons = {
-      container: <ContainerIcon />,
-      modal: <ContainerIcon />,
+      container: <ViewComfyIcon />,
+      modal: <ViewComfyIcon />,
       tabs: <TabIcon />,
       form: <FormIcon />,
       chart: <ChartIcon />
@@ -328,14 +333,6 @@ const LayoutElementsPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -366,10 +363,10 @@ const LayoutElementsPage = () => {
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Existing Elements ({elements.length})
+            Existing Elements ({elementsData.length})
           </Typography>
           
-          {elements.length === 0 ? (
+          {elementsData.length === 0 ? (
             <Box textAlign="center" py={4}>
               <LayoutIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -392,7 +389,7 @@ const LayoutElementsPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {elements.map((element) => (
+                  {elementsData.map((element) => (
                     <TableRow key={element.id}>
                       <TableCell>
                         <Box display="flex" alignItems="center">

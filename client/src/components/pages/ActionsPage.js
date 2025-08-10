@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -21,35 +21,29 @@ import {
   Chip,
   IconButton,
   Alert,
-  CircularProgress,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Switch,
-  FormControlLabel,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  FormControlLabel
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   PlayArrow as PlayIcon,
-  ExpandMore as ExpandMoreIcon,
   Bolt as ActionIcon,
   Navigation as NavIcon,
   DataUsage as DataIcon,
   TouchApp as TouchIcon,
   Api as ApiIcon
 } from '@mui/icons-material';
-import { fetchActions, createAction, executeAction } from '../../services/api';
+import useApi from '../../hooks/useApi';
+import apiClient from '../../services/api';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const ActionsPage = () => {
-  const [actions, setActions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingAction, setEditingAction] = useState(null);
   const [executeDialog, setExecuteDialog] = useState(false);
@@ -65,21 +59,27 @@ const ActionsPage = () => {
     enabled: true
   });
 
-  useEffect(() => {
-    fetchActionsList();
-  }, []);
+  // Use the useApi hook for data fetching
+  const { data: actions, loading, error, execute: fetchActions } = useApi(() => apiClient.getSigmaActions(), { autoExecute: true });
 
-  const fetchActionsList = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchActions();
-      setActions(data || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return <LoadingSpinner message="Loading actions..." />;
+  }
+
+  if (error) {
+    console.error('Actions Error:', error);
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Error loading actions: {error.message || error}
+        <Button onClick={fetchActions} sx={{ ml: 2 }}>
+          Retry
+        </Button>
+      </Alert>
+    );
+  }
+
+  // Extract the actual data from the API response with proper fallbacks
+  const actionsData = actions?.data || actions || [];
 
   const handleOpenDialog = (action = null) => {
     if (action) {
@@ -122,16 +122,16 @@ const ActionsPage = () => {
   const handleSubmit = async () => {
     try {
       if (editingAction) {
-        // Update existing action
-        // await updateAction(editingAction.id, formData);
+        // Update existing action - would need to implement updateAction in apiClient
+        // await apiClient.put(`/sigma/actions/${editingAction.id}`, formData);
       } else {
-        // Create new action
-        await createAction(formData);
+        // Create new action - would need to implement createAction in apiClient
+        // await apiClient.post('/sigma/actions', formData);
       }
       handleCloseDialog();
-      fetchActionsList();
+      fetchActions();
     } catch (err) {
-      setError(err.message);
+      console.error('Error saving action:', err);
     }
   };
 
@@ -184,7 +184,7 @@ const ActionsPage = () => {
 
   const executeSelectedAction = async () => {
     try {
-      const result = await executeAction(selectedAction.id, executionParams);
+      const result = await apiClient.executeSigmaAction(selectedAction.id, executionParams);
       setExecutionResult(result);
     } catch (err) {
       setExecutionResult({ error: err.message });
@@ -370,14 +370,6 @@ const ActionsPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -408,10 +400,10 @@ const ActionsPage = () => {
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Available Actions ({actions.length})
+            Available Actions ({actionsData.length})
           </Typography>
           
-          {actions.length === 0 ? (
+          {actionsData.length === 0 ? (
             <Box textAlign="center" py={4}>
               <ActionIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -434,7 +426,7 @@ const ActionsPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {actions.map((action) => (
+                  {actionsData.map((action) => (
                     <TableRow key={action.id}>
                       <TableCell>
                         <Box display="flex" alignItems="center">

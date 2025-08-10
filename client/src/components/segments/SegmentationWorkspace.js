@@ -1,6 +1,6 @@
 // src/components/segments/SegmentationWorkspace.js
 import React, { useState, useEffect } from 'react';
-import { fetchUserSegments } from '../../services/api';
+import apiClient from '../../services/api';
 
 const SegmentationWorkspace = () => {
   const [segments, setSegments] = useState([]);
@@ -10,7 +10,7 @@ const SegmentationWorkspace = () => {
   useEffect(() => {
     const loadSegments = async () => {
       try {
-        const data = await fetchUserSegments();
+        const data = await apiClient.getUserSegments();
         if (data) {
           setSegments(data);
           setLoading(false);

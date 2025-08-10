@@ -1,6 +1,6 @@
 // src/components/personalization/ContentRecommendationEngine.js
 import React, { useState, useEffect } from 'react';
-import { fetchPersonalizationData } from '../../services/api';
+import apiClient from '../../services/api';
 
 const ContentRecommendationEngine = () => {
   const [recommendations, setRecommendations] = useState({
@@ -14,7 +14,7 @@ const ContentRecommendationEngine = () => {
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        const data = await fetchPersonalizationData();
+        const data = await apiClient.getPersonalization();
         
         if (data) {
           // Process content preferences

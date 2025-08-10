@@ -1,240 +1,197 @@
 // src/services/api.js
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5555/api';
 
-export const fetchData = async (endpoint) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+class ApiError extends Error {
+  constructor(message, status, data) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+class ApiClient {
+  constructor(baseURL = API_BASE_URL) {
+    this.baseURL = baseURL;
+  }
+
+  async request(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    console.log(`API Request: ${url}`, config);
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new ApiError(
+          `HTTP error! status: ${response.status}`,
+          response.status,
+          await response.json().catch(() => ({}))
+        );
+      }
+
+      const data = await response.json();
+      console.log(`API Response: ${url}`, data);
+      return data;
+    } catch (error) {
+      console.error(`API Error: ${url}`, error);
+      
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      
+      // Check if it's a network error
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new ApiError(
+          `Network error: Fetch API not available - ${error.message}`,
+          0,
+          {}
+        );
+      }
+      
+      // Check if it's a CORS error
+      if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+        throw new ApiError(
+          `CORS error: ${error.message}`,
+          0,
+          {}
+        );
+      }
+      
+      throw new ApiError(
+        `Network error: ${error.message}`,
+        0,
+        {}
+      );
     }
-    return await response.json();
-  } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error);
-    return null;
   }
-};
 
-// Existing exports
-export const fetchUserSegments = () => fetchData('/segments');
-export const fetchUserJourneyData = () => fetchData('/user-journey');
-export const fetchPersonalizationData = () => fetchData('/personalization');
+  // Generic methods
+  async get(endpoint) {
+    return this.request(endpoint, { method: 'GET' });
+  }
 
-// New exports following the same pattern
-export const fetchChurnPredictionData = () => fetchData('/churn-prediction');
-export const fetchReferralInsights = () => fetchData('/referral-insights');
-export const fetchFeatureUsageAnalytics = () => fetchData('/feature-usage');
-
-// =============================================================================
-// SIGMA FRAMEWORK API ENDPOINTS
-// =============================================================================
-
-// Sigma Framework Status and Health
-export const fetchSigmaStatus = () => fetchData('/sigma/status');
-export const fetchSigmaCapabilities = () => fetchData('/sigma/capabilities');
-export const fetchDatabaseHealth = () => fetchData('/database/health');
-
-// Sigma Input Tables Management
-export const fetchInputTables = () => fetchData('/sigma/input-tables');
-export const createInputTable = async (tableData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/sigma/input-tables`, {
+  async post(endpoint, data) {
+    return this.request(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tableData)
+      body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating input table:', error);
-    throw error;
   }
-};
 
-// Sigma Layout Elements Management
-export const fetchLayoutElements = () => fetchData('/sigma/layout-elements');
-export const createLayoutElement = async (elementData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/sigma/layout-elements`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(elementData)
+  async put(endpoint, data) {
+    return this.request(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating layout element:', error);
-    throw error;
   }
-};
 
-// Sigma Actions Framework
-export const fetchActions = () => fetchData('/sigma/actions');
-export const createAction = async (actionData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/sigma/actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(actionData)
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating action:', error);
-    throw error;
+  async delete(endpoint) {
+    return this.request(endpoint, { method: 'DELETE' });
   }
-};
 
-export const executeAction = async (actionId, parameters = {}) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/sigma/actions/${actionId}/execute`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(parameters)
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Error executing action:', error);
-    throw error;
+  // Health check
+  async healthCheck() {
+    return this.get('/health');
   }
-};
 
-// =============================================================================
-// EXISTING FUNCTIONALITY (UPDATED)
-// =============================================================================
-
-// New method for raw user data with query parameter support
-export const fetchRawUserData = async (filters = {}) => {
-  try {
-    // Convert filters to appropriate format
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => v !== '')
-    );
-
-    const queryParams = new URLSearchParams();
-    
-    // Add filters to query parameters
-    Object.keys(cleanedFilters).forEach(key => {
-      queryParams.append(key, cleanedFilters[key]);
-    });
-
-    // Construct full URL
-    const endpoint = `/raw-user-data?${queryParams.toString()}`;
-    
-    // Use existing fetchData method
-    const data = await fetchData(endpoint);
-
-    // Additional validation
-    if (!Array.isArray(data)) {
-      throw new Error('Expected an array of user data');
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching raw user data:', error);
-    throw error;
+  // Sigma framework endpoints
+  async getSigmaStatus() {
+    return this.get('/sigma/status');
   }
-};
 
+  async getSigmaCapabilities() {
+    return this.get('/sigma/capabilities');
+  }
+
+  async getSigmaInputTables() {
+    return this.get('/sigma/input-tables');
+  }
+
+  async getSigmaLayoutElements() {
+    return this.get('/sigma/layout-elements');
+  }
+
+  async getSigmaActions() {
+    return this.get('/sigma/actions');
+  }
+
+  async executeSigmaAction(actionId, parameters) {
+    return this.post(`/sigma/actions/${actionId}/execute`, parameters);
+  }
+
+  async toggleSigmaMode(mode) {
+    return this.post('/sigma/toggle-mode', { mode });
+  }
+
+  async getSigmaConfig() {
+    return this.get('/sigma/config');
+  }
+
+  // Analytics endpoints
+  async getUserSegments() {
+    return this.get('/segments');
+  }
+
+  async getUserJourney() {
+    return this.get('/user-journey');
+  }
+
+  async getPersonalizationData() {
+    return this.get('/personalization');
+  }
+
+  async getChurnPrediction() {
+    return this.get('/churn-prediction');
+  }
+
+  async getReferralInsights() {
+    return this.get('/referral-insights');
+  }
+
+  async getFeatureUsage() {
+    return this.get('/feature-usage');
+  }
+
+  async getRevenueForecast() {
+    return this.get('/revenue-forecast');
+  }
+
+  async getRawUserData(limit = 100, offset = 0) {
+    return this.get(`/raw-user-data?limit=${limit}&offset=${offset}`);
+  }
+
+  async getAIInsights() {
+    return this.get('/ai-insights');
+  }
+}
+
+// Create and export a singleton instance
+const apiClient = new ApiClient();
+
+// Export both the class and the instance
+export { ApiClient, ApiError };
+export default apiClient;
+
+// Legacy exports for backward compatibility
+export const fetchData = (endpoint) => apiClient.get(endpoint);
+export const fetchUserSegments = () => apiClient.getUserSegments();
+
+// Additional exports for components
 export const fetchAIInsights = {
-  getStrategicAnalysis: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ai-insights?type=strategic`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Validate data structure
-      if (!data.insights || !data.segment_profiles) {
-        throw new Error('Invalid data structure received');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Strategic Analysis Fetch Error:', error);
-      throw error;
-    }
-  },
-  
-  getABTestingAnalysis: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ai-insights?type=ab_testing`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Validate data structure for AB testing
-      if (!data.insights) {
-        throw new Error('Invalid AB testing data structure');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('AB Testing Analysis Fetch Error:', error);
-      throw error;
-    }
-  },
-  
-  getPredictiveInsights: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ai-insights?type=predictive`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Validate data structure for predictive insights
-      if (!data.insights) {
-        throw new Error('Invalid predictive insights data structure');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Predictive Insights Fetch Error:', error);
-      throw error;
-    }
-  },
-  
-  getSegmentDetails: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/segment-details`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Segment Details Fetch Error:', error);
-      throw error;
-    }
-  },
-  
-  getRevenueForecast: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/revenue-forecast`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Revenue Forecast Fetch Error:', error);
-      throw error;
-    }
-  }
+  getStrategicAnalysis: () => apiClient.get('/ai-insights/strategic-analysis'),
+  getABTestingAnalysis: () => apiClient.get('/ai-insights/ab-testing'),
+  getMarketingInsights: () => apiClient.get('/ai-insights/marketing'),
+  getPredictiveInsights: () => apiClient.get('/ai-insights/predictive'),
 };
+
+export const fetchUserJourneyData = () => apiClient.getUserJourney();
+
+export const fetchLayoutElements = () => apiClient.getSigmaLayoutElements();

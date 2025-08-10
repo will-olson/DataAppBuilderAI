@@ -28,7 +28,7 @@ import {
   ComposedChart,
   Line
 } from 'recharts';
-import { fetchUserJourneyData } from '../../services/api';
+import apiClient from '../../services/api';
 
 const UserJourneyPage = () => {
   const [journeyData, setJourneyData] = useState([]);
@@ -42,7 +42,7 @@ const UserJourneyPage = () => {
   useEffect(() => {
     const loadUserJourneyData = async () => {
       try {
-        const data = await fetchUserJourneyData();
+        const data = await apiClient.getUserJourney();
         if (data) {
           setJourneyData(data);
           setLoading(false);

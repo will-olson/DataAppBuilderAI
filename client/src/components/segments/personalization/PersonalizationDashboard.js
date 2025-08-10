@@ -1,6 +1,6 @@
 // src/components/personalization/PersonalizationDashboard.js
 import React, { useState, useEffect } from 'react';
-import { fetchPersonalizationData } from '../../services/api';
+import apiClient from '../../services/api';
 import ContentRecommendationEngine from './ContentRecommendationEngine';
 
 const PersonalizationDashboard = () => {
@@ -15,7 +15,7 @@ const PersonalizationDashboard = () => {
   useEffect(() => {
     const fetchPersonalizationInsights = async () => {
       try {
-        const data = await fetchPersonalizationData();
+        const data = await apiClient.getPersonalization();
         
         if (data) {
           // Enhance data with additional insights

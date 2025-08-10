@@ -1,112 +1,108 @@
 import os
-from datetime import timedelta
+from typing import Dict, Any
 
 class Config:
-    # Base Directory
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    """Base configuration class"""
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ECHO = False
+    
+    # Unified Sigma Framework Configuration
+    SIGMA_MODE = os.environ.get('SIGMA_MODE', 'standalone')  # standalone, mock_warehouse, sigma
+    DATABASE_MODE = os.environ.get('DATABASE_MODE', 'sqlite')  # sqlite, mock_warehouse, real_warehouse
+    
+    # Sigma Framework Features
+    SIGMA_FEATURES = {
+        'input_tables': True,
+        'layout_elements': True,
+        'actions_framework': True,
+        'data_governance': True,
+        'real_time_sync': False
+    }
     
     # Database Configuration
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(BASE_DIR, 'app.db')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     
-    # Secret Key
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-hard-to-guess-secret-key'
-    
-    # Application Configurations
-    DEBUG = False
-    TESTING = False
-    
-    # Additional SQLAlchemy Options
-    SQLALCHEMY_ECHO = False  # Set to True to log SQL statements
-    
-    # Sigma Compatibility Mode
-    SIGMA_MODE = os.environ.get('SIGMA_MODE', 'standalone')  # 'standalone', 'mock_warehouse', 'sigma'
-    
-    # Database Mode
-    DATABASE_MODE = os.environ.get('DATABASE_MODE', 'sqlite')  # 'sqlite', 'mock_warehouse', 'real_warehouse'
-    
-    # Mock Warehouse Configuration
+    # Mock Warehouse Configuration (for testing)
     MOCK_WAREHOUSE_CONFIG = {
-        'enabled': os.environ.get('MOCK_WAREHOUSE_ENABLED', 'false').lower() == 'true',
-        'data_path': os.environ.get('MOCK_WAREHOUSE_DATA_PATH', 'server/mock_warehouse/data'),
-        'schema_path': os.environ.get('MOCK_WAREHOUSE_SCHEMA_PATH', 'server/mock_warehouse/schemas'),
-        'auto_sync': os.environ.get('MOCK_WAREHOUSE_AUTO_SYNC', 'true').lower() == 'true'
+        'enabled': SIGMA_MODE == 'mock_warehouse',
+        'data_path': 'mock_warehouse/data',
+        'schema_path': 'mock_warehouse/schemas',
+        'auto_sync': True
     }
     
-    # Sigma Integration Configuration
-    SIGMA_INTEGRATION_CONFIG = {
-        'enabled': os.environ.get('SIGMA_INTEGRATION_ENABLED', 'false').lower() == 'true',
-        'warehouse_type': os.environ.get('SIGMA_WAREHOUSE_TYPE', 'snowflake'),
-        'warehouse_config': {
-            'account': os.environ.get('SNOWFLAKE_ACCOUNT'),
-            'user': os.environ.get('SNOWFLAKE_USER'),
-            'password': os.environ.get('SNOWFLAKE_PASSWORD'),
-            'warehouse': os.environ.get('SNOWFLAKE_WAREHOUSE'),
-            'database': os.environ.get('SNOWFLAKE_DATABASE'),
-            'schema': os.environ.get('SNOWFLAKE_SCHEMA')
-        }
+    # Real Warehouse Configuration (for production)
+    WAREHOUSE_CONFIG = {
+        'enabled': SIGMA_MODE == 'sigma',
+        'type': os.environ.get('WAREHOUSE_TYPE', 'snowflake'),
+        'account': os.environ.get('SNOWFLAKE_ACCOUNT'),
+        'user': os.environ.get('SNOWFLAKE_USER'),
+        'password': os.environ.get('SNOWFLAKE_PASSWORD'),
+        'warehouse': os.environ.get('SNOWFLAKE_WAREHOUSE'),
+        'database': os.environ.get('SNOWFLAKE_DATABASE'),
+        'schema': os.environ.get('SNOWFLAKE_SCHEMA')
     }
-    
-    # Metadata Naming Convention (optional, but recommended)
-    SQLALCHEMY_METADATA = {
-        "naming_convention": {
-            "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-            "ix": "ix_%(column_0_label)s",
-            "uq": "uq_%(table_name)s_%(column_0_name)s",
-            "pk": "pk_%(table_name)s"
-        }
-    }
-    
-    def __getitem__(self, key):
-        """Make config objects subscriptable like dictionaries"""
-        return getattr(self, key, None)
 
 class DevelopmentConfig(Config):
+    """Development configuration"""
     DEBUG = True
     SQLALCHEMY_ECHO = True
-    SIGMA_MODE = 'standalone'
+    SIGMA_MODE = 'standalone'  # Default to standalone for development
     DATABASE_MODE = 'sqlite'
 
 class TestingConfig(Config):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    SIGMA_MODE = 'standalone'
-    DATABASE_MODE = 'sqlite'
-
-class MockWarehouseConfig(Config):
+    """Testing configuration with mock warehouse"""
     DEBUG = True
+    TESTING = True
     SIGMA_MODE = 'mock_warehouse'
     DATABASE_MODE = 'mock_warehouse'
-    MOCK_WAREHOUSE_CONFIG = {
-        'enabled': True,
-        'data_path': 'server/mock_warehouse/data',
-        'schema_path': 'server/mock_warehouse/schemas',
-        'auto_sync': True
-    }
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
-class SigmaConfig(Config):
+class ProductionConfig(Config):
+    """Production configuration with real Sigma integration"""
     DEBUG = False
     SIGMA_MODE = 'sigma'
     DATABASE_MODE = 'real_warehouse'
-    SIGMA_INTEGRATION_CONFIG = {
-        'enabled': True,
-        'warehouse_type': 'snowflake',
-        'warehouse_config': {
-            'account': os.environ.get('SNOWFLAKE_ACCOUNT'),
-            'user': os.environ.get('SNOWFLAKE_USER'),
-            'password': os.environ.get('SNOWFLAKE_PASSWORD'),
-            'warehouse': os.environ.get('SNOWFLAKE_WAREHOUSE'),
-            'database': os.environ.get('SNOWFLAKE_DATABASE'),
-            'schema': os.environ.get('SNOWFLAKE_SCHEMA')
-        }
-    }
 
-# Configuration dictionary for application factory
+# Configuration mapping
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,
-    'mock_warehouse': MockWarehouseConfig,
-    'sigma': SigmaConfig,
+    'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
+def get_config(config_name: str = None) -> Config:
+    """Get configuration by name or from environment"""
+    if config_name:
+        return config.get(config_name, config['default'])
+    
+    # Auto-detect based on environment
+    env = os.environ.get('FLASK_ENV', 'development')
+    return config.get(env, config['default'])
+
+def update_sigma_mode(mode: str) -> Dict[str, Any]:
+    """Update Sigma mode dynamically (called from frontend)"""
+    valid_modes = ['standalone', 'mock_warehouse', 'sigma']
+    if mode not in valid_modes:
+        raise ValueError(f"Invalid Sigma mode: {mode}. Must be one of {valid_modes}")
+    
+    # Update configuration
+    Config.SIGMA_MODE = mode
+    
+    # Update database mode based on Sigma mode
+    if mode == 'standalone':
+        Config.DATABASE_MODE = 'sqlite'
+    elif mode == 'mock_warehouse':
+        Config.DATABASE_MODE = 'mock_warehouse'
+    elif mode == 'sigma':
+        Config.DATABASE_MODE = 'real_warehouse'
+    
+    # Update feature flags
+    Config.SIGMA_FEATURES['real_time_sync'] = mode == 'sigma'
+    
+    return {
+        'sigma_mode': Config.SIGMA_MODE,
+        'database_mode': Config.DATABASE_MODE,
+        'features': Config.SIGMA_FEATURES
+    }

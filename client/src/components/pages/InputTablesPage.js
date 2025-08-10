@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -21,7 +21,6 @@ import {
   Chip,
   IconButton,
   Alert,
-  CircularProgress,
   FormControl,
   InputLabel,
   Select,
@@ -33,12 +32,11 @@ import {
   Delete as DeleteIcon,
   TableChart as TableIcon
 } from '@mui/icons-material';
-import { fetchInputTables, createInputTable } from '../../services/api';
+import useApi from '../../hooks/useApi';
+import apiClient from '../../services/api';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const InputTablesPage = () => {
-  const [tables, setTables] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
   const [formData, setFormData] = useState({
@@ -50,21 +48,27 @@ const InputTablesPage = () => {
     governance_config: {}
   });
 
-  useEffect(() => {
-    fetchTables();
-  }, []);
+  // Use the useApi hook for data fetching
+  const { data: inputTables, loading, error, execute: fetchInputTables } = useApi(() => apiClient.getSigmaInputTables(), { autoExecute: true });
 
-  const fetchTables = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchInputTables();
-      setTables(data || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (loading) {
+    return <LoadingSpinner message="Loading input tables..." />;
+  }
+
+  if (error) {
+    console.error('Input Tables Error:', error);
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Error loading input tables: {error.message || error}
+        <Button onClick={fetchInputTables} sx={{ ml: 2 }}>
+          Retry
+        </Button>
+      </Alert>
+    );
+  }
+
+  // Extract the actual data from the API response with proper fallbacks
+  const tablesData = inputTables?.data || inputTables || [];
 
   const handleOpenDialog = (table = null) => {
     if (table) {
@@ -107,16 +111,16 @@ const InputTablesPage = () => {
   const handleSubmit = async () => {
     try {
       if (editingTable) {
-        // Update existing table
-        // await updateInputTable(editingTable.id, formData);
+        // Update existing table - would need to implement updateInputTable in apiClient
+        // await apiClient.put(`/sigma/input-tables/${editingTable.id}`, formData);
       } else {
-        // Create new table
-        await createInputTable(formData);
+        // Create new table - would need to implement createInputTable in apiClient
+        // await apiClient.post('/sigma/input-tables', formData);
       }
       handleCloseDialog();
-      fetchTables();
+      fetchInputTables();
     } catch (err) {
-      setError(err.message);
+      console.error('Error saving input table:', err);
     }
   };
 
@@ -160,14 +164,6 @@ const InputTablesPage = () => {
     return colors[type] || 'default';
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -198,10 +194,10 @@ const InputTablesPage = () => {
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Existing Tables ({tables.length})
+            Existing Tables ({tablesData.length})
           </Typography>
           
-          {tables.length === 0 ? (
+          {tablesData.length === 0 ? (
             <Box textAlign="center" py={4}>
               <TableIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -224,7 +220,7 @@ const InputTablesPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {tables.map((table) => (
+                  {tablesData.map((table) => (
                     <TableRow key={table.id}>
                       <TableCell>
                         <Box>

@@ -23,8 +23,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemButton,
-  Collapse,
-  useMediaQuery
+  Collapse
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -33,7 +32,6 @@ import {
   Timeline as TimelineIcon,
   Tune as TuneIcon,
   Analytics as AnalyticsIcon,
-  Settings as SettingsIcon,
   ExpandLess,
   ExpandMore,
   Storage as StorageIcon,
@@ -44,22 +42,25 @@ import {
 } from '@mui/icons-material';
 
 // Import existing pages
-import DashboardPage from './components/pages/DashboardPage';
-import UserSegmentsPage from './components/pages/UserSegmentsPage';
-import UserJourneyPage from './components/pages/UserJourneyPage';
+import DashboardPage from './components/pages/Dashboard';
+import UserSegmentsPage from './components/pages/Segmentation';
+import UserJourneyPage from './components/pages/UserJourney';
 import PersonalizationPage from './components/pages/PersonalizationPage';
 import ChurnPredictionPage from './components/pages/ChurnPredictionPage';
-import ReferralInsightsPage from './components/pages/ReferralInsightsPage';
-import RawUserDataPage from './components/pages/RawUserDataPage';
-import AIInsightsPage from './components/pages/AIInsightsPage';
+import ReferralInsightsPage from './components/pages/ReferralGrowthPage';
+import RawUserDataPage from './components/pages/DataExplorationPage';
+import AIInsightsPage from './components/pages/StrategicAnalysisPage';
 import FeatureUsagePage from './components/pages/FeatureUsagePage';
-import RevenueForecastPage from './components/pages/RevenueForecastPage';
+import RevenueForecastPage from './components/pages/PredictiveInsightsPage';
 
 // Import new Sigma framework pages
 import SigmaStatusPage from './components/pages/SigmaStatusPage';
 import InputTablesPage from './components/pages/InputTablesPage';
 import LayoutElementsPage from './components/pages/LayoutElementsPage';
 import ActionsPage from './components/pages/ActionsPage';
+
+// Import ErrorBoundary
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 const drawerWidth = 280;
 
@@ -78,7 +79,6 @@ function App() {
   const [open, setOpen] = useState(true);
   const [sigmaMenuOpen, setSigmaMenuOpen] = useState(true);
   const [analyticsMenuOpen, setAnalyticsMenuOpen] = useState(true);
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -259,102 +259,104 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Box sx={{ display: 'flex' }}>
-          <AppBar
-            position="fixed"
-            sx={{
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
-              ml: { sm: `${drawerWidth}px` },
-            }}
-          >
-            <Toolbar>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                edge="start"
-                onClick={handleDrawerToggle}
-                sx={{ mr: 2, display: { sm: 'none' } }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" noWrap component="div">
-                GrowthMarketer AI - Sigma Framework
-              </Typography>
-            </Toolbar>
-          </AppBar>
-          
-          <Box
-            component="nav"
-            sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-            aria-label="mailbox folders"
-          >
-            {/* Mobile drawer */}
-            <Drawer
-              variant="temporary"
-              open={open}
-              onClose={handleDrawerToggle}
-              ModalProps={{
-                keepMounted: true, // Better open performance on mobile.
-              }}
+      <ErrorBoundary>
+        <Router>
+          <Box sx={{ display: 'flex' }}>
+            <AppBar
+              position="fixed"
               sx={{
-                display: { xs: 'block', sm: 'none' },
-                '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                width: { sm: `calc(100% - ${drawerWidth}px)` },
+                ml: { sm: `${drawerWidth}px` },
               }}
             >
-              {drawer}
-            </Drawer>
+              <Toolbar>
+                <IconButton
+                  color="inherit"
+                  aria-label="open drawer"
+                  edge="start"
+                  onClick={handleDrawerToggle}
+                  sx={{ mr: 2, display: { sm: 'none' } }}
+                >
+                  <MenuIcon />
+                </IconButton>
+                <Typography variant="h6" noWrap component="div">
+                  GrowthMarketer AI - Sigma Framework
+                </Typography>
+              </Toolbar>
+            </AppBar>
             
-            {/* Desktop drawer */}
-            <Drawer
-              variant="permanent"
-              sx={{
-                display: { xs: 'none', sm: 'block' },
-                '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-              }}
-              open
+            <Box
+              component="nav"
+              sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+              aria-label="mailbox folders"
             >
-              {drawer}
-            </Drawer>
+              {/* Mobile drawer */}
+              <Drawer
+                variant="temporary"
+                open={open}
+                onClose={handleDrawerToggle}
+                ModalProps={{
+                  keepMounted: true, // Better open performance on mobile.
+                }}
+                sx={{
+                  display: { xs: 'block', sm: 'none' },
+                  '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                }}
+              >
+                {drawer}
+              </Drawer>
+              
+              {/* Desktop drawer */}
+              <Drawer
+                variant="permanent"
+                sx={{
+                  display: { xs: 'none', sm: 'block' },
+                  '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                }}
+                open
+              >
+                {drawer}
+              </Drawer>
+            </Box>
+            
+            <Box
+              component="main"
+              sx={{
+                flexGrow: 1,
+                p: 3,
+                width: { sm: `calc(100% - ${drawerWidth}px)` },
+                mt: 8
+              }}
+            >
+              <Routes>
+                {/* Main Dashboard */}
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                
+                {/* Analytics Routes */}
+                <Route path="/analytics/user-segments" element={<UserSegmentsPage />} />
+                <Route path="/analytics/user-journey" element={<UserJourneyPage />} />
+                <Route path="/analytics/personalization" element={<PersonalizationPage />} />
+                <Route path="/analytics/churn-prediction" element={<ChurnPredictionPage />} />
+                <Route path="/analytics/referral-insights" element={<ReferralInsightsPage />} />
+                <Route path="/analytics/raw-user-data" element={<RawUserDataPage />} />
+                <Route path="/analytics/ai-insights" element={<AIInsightsPage />} />
+                <Route path="/analytics/feature-usage" element={<FeatureUsagePage />} />
+                <Route path="/analytics/revenue-forecast" element={<RevenueForecastPage />} />
+                
+                {/* Sigma Framework Routes */}
+                <Route path="/sigma/status" element={<SigmaStatusPage />} />
+                <Route path="/sigma/input-tables" element={<InputTablesPage />} />
+                <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
+                <Route path="/sigma/actions" element={<ActionsPage />} />
+                
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Box>
           </Box>
-          
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              p: 3,
-              width: { sm: `calc(100% - ${drawerWidth}px)` },
-              mt: 8
-            }}
-          >
-            <Routes>
-              {/* Main Dashboard */}
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              
-              {/* Analytics Routes */}
-              <Route path="/analytics/user-segments" element={<UserSegmentsPage />} />
-              <Route path="/analytics/user-journey" element={<UserJourneyPage />} />
-              <Route path="/analytics/personalization" element={<PersonalizationPage />} />
-              <Route path="/analytics/churn-prediction" element={<ChurnPredictionPage />} />
-              <Route path="/analytics/referral-insights" element={<ReferralInsightsPage />} />
-              <Route path="/analytics/raw-user-data" element={<RawUserDataPage />} />
-              <Route path="/analytics/ai-insights" element={<AIInsightsPage />} />
-              <Route path="/analytics/feature-usage" element={<FeatureUsagePage />} />
-              <Route path="/analytics/revenue-forecast" element={<RevenueForecastPage />} />
-              
-              {/* Sigma Framework Routes */}
-              <Route path="/sigma/status" element={<SigmaStatusPage />} />
-              <Route path="/sigma/input-tables" element={<InputTablesPage />} />
-              <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
-              <Route path="/sigma/actions" element={<ActionsPage />} />
-              
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Box>
-        </Box>
-      </Router>
+        </Router>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
