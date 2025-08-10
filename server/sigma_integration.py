@@ -189,6 +189,58 @@ class SigmaIntegration:
             except Exception as e:
                 logger.error(f"Error managing actions: {e}")
                 return jsonify({'status': 'error', 'message': str(e)}), 500
+
+        # Data App Templates
+        @self.app.route('/api/data-app-templates', methods=['GET'])
+        def get_data_app_templates():
+            """Get available data app templates"""
+            try:
+                # For now, return some sample templates
+                # In a real implementation, these would come from a database or configuration
+                templates = [
+                    {
+                        'id': 'basic-dashboard',
+                        'name': 'Basic Dashboard',
+                        'description': 'A simple dashboard with basic charts and tables',
+                        'category': 'dashboard',
+                        'complexity': 'beginner',
+                        'features': ['charts', 'tables', 'filters'],
+                        'estimated_time': '2-4 hours'
+                    },
+                    {
+                        'id': 'interactive-report',
+                        'name': 'Interactive Report',
+                        'description': 'An interactive report with drill-down capabilities',
+                        'category': 'report',
+                        'complexity': 'intermediate',
+                        'features': ['drill-down', 'interactive-charts', 'export'],
+                        'estimated_time': '4-8 hours'
+                    },
+                    {
+                        'id': 'data-entry-form',
+                        'name': 'Data Entry Form',
+                        'description': 'A form-based data entry application',
+                        'category': 'form',
+                        'complexity': 'beginner',
+                        'features': ['forms', 'validation', 'data-storage'],
+                        'estimated_time': '1-3 hours'
+                    },
+                    {
+                        'id': 'advanced-analytics',
+                        'name': 'Advanced Analytics',
+                        'description': 'Advanced analytics with machine learning insights',
+                        'category': 'analytics',
+                        'complexity': 'advanced',
+                        'features': ['ml-insights', 'predictions', 'custom-algorithms'],
+                        'estimated_time': '8-16 hours'
+                    }
+                ]
+                
+                return jsonify({'status': 'success', 'data': templates})
+                
+            except Exception as e:
+                logger.error(f"Error getting data app templates: {e}")
+                return jsonify({'status': 'error', 'message': str(e)}), 500
         
         # Execute Sigma Action
         @self.app.route('/api/sigma/actions/<action_id>/execute', methods=['POST'])

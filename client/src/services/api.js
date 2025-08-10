@@ -27,6 +27,16 @@ class ApiClient {
 
     console.log(`API Request: ${url}`, config);
 
+    // Check if fetch is available
+    if (typeof fetch === 'undefined') {
+      console.error('Fetch API is not available in this environment');
+      throw new ApiError(
+        'Fetch API not available in this environment. Please check browser compatibility or polyfill.',
+        0,
+        {}
+      );
+    }
+
     try {
       const response = await fetch(url, config);
       
@@ -191,6 +201,30 @@ class ApiClient {
 
   async getAIInsights() {
     return this.get('/ai-insights');
+  }
+
+  async getDataAppTemplates() {
+    return this.get('/data-app-templates');
+  }
+
+  async createDataApp(data) {
+    return this.post('/data-apps', data);
+  }
+
+  async updateDataApp(id, data) {
+    return this.put(`/data-apps/${id}`, data);
+  }
+
+  async deleteDataApp(id) {
+    return this.delete(`/data-apps/${id}`);
+  }
+
+  async getDataApp(id) {
+    return this.get(`/data-apps/${id}`);
+  }
+
+  async listDataApps() {
+    return this.get('/data-apps');
   }
 }
 
