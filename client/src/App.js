@@ -23,7 +23,9 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemButton,
-  Collapse
+  Collapse,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -76,12 +78,51 @@ const theme = createTheme({
       main: '#dc004e',
     },
   },
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 960,
+      lg: 1280,
+      xl: 1920,
+    },
+  },
+  components: {
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          boxSizing: 'border-box',
+        },
+      },
+    },
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          '@media (min-width:600px)': {
+            paddingLeft: 24,
+            paddingRight: 24,
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          '@media (max-width:600px)': {
+            marginBottom: 16,
+          },
+        },
+      },
+    },
+  },
 });
 
 function App() {
   const [open, setOpen] = useState(true);
   const [sigmaMenuOpen, setSigmaMenuOpen] = useState(true);
   const [analyticsMenuOpen, setAnalyticsMenuOpen] = useState(true);
+  const themeContext = useTheme();
+  const isMobile = useMediaQuery(themeContext.breakpoints.down('md'));
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -193,7 +234,7 @@ function App() {
   ];
 
   const drawer = (
-    <div>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
           GrowthMarketer AI
@@ -201,74 +242,76 @@ function App() {
       </Toolbar>
       <Divider />
       
-      {/* Main Dashboard */}
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton component={Link} to={item.path}>
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-
-      <Divider />
-
-      {/* Analytics Section */}
-      <List>
-        <ListItemButton onClick={() => setAnalyticsMenuOpen(!analyticsMenuOpen)}>
-          <ListItemIcon>
-            <AnalyticsIcon />
-          </ListItemIcon>
-          <ListItemText primary="Analytics" />
-          {analyticsMenuOpen ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={analyticsMenuOpen} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            {analyticsItems.map((item) => (
-              <ListItemButton
-                key={item.text}
-                sx={{ pl: 4 }}
-                component={Link}
-                to={item.path}
-              >
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        {/* Main Dashboard */}
+        <List>
+          {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton component={Link} to={item.path}>
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>
-            ))}
-          </List>
-        </Collapse>
-      </List>
+            </ListItem>
+          ))}
+        </List>
 
-      <Divider />
+        <Divider />
 
-      {/* Sigma Framework Section */}
-      <List>
-        <ListItemButton onClick={() => setSigmaMenuOpen(!sigmaMenuOpen)}>
-          <ListItemIcon>
-            <CodeIcon />
-          </ListItemIcon>
-          <ListItemText primary="Sigma Framework" />
-          {sigmaMenuOpen ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={sigmaMenuOpen} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            {sigmaItems.map((item) => (
-              <ListItemButton
-                key={item.text}
-                sx={{ pl: 4 }}
-                component={Link}
-                to={item.path}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            ))}
-          </List>
-        </Collapse>
-      </List>
-    </div>
+        {/* Analytics Section */}
+        <List>
+          <ListItemButton onClick={() => setAnalyticsMenuOpen(!analyticsMenuOpen)}>
+            <ListItemIcon>
+              <AnalyticsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Analytics" />
+            {analyticsMenuOpen ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+          <Collapse in={analyticsMenuOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {analyticsItems.map((item) => (
+                <ListItemButton
+                  key={item.text}
+                  sx={{ pl: 4 }}
+                  component={Link}
+                  to={item.path}
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              ))}
+            </List>
+          </Collapse>
+        </List>
+
+        <Divider />
+
+        {/* Sigma Framework Section */}
+        <List>
+          <ListItemButton onClick={() => setSigmaMenuOpen(!sigmaMenuOpen)}>
+            <ListItemIcon>
+              <CodeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Sigma Framework" />
+            {sigmaMenuOpen ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+          <Collapse in={sigmaMenuOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              {sigmaItems.map((item) => (
+                <ListItemButton
+                  key={item.text}
+                  sx={{ pl: 4 }}
+                  component={Link}
+                  to={item.path}
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              ))}
+            </List>
+          </Collapse>
+        </List>
+      </Box>
+    </Box>
   );
 
   return (
@@ -276,12 +319,13 @@ function App() {
       <CssBaseline />
       <ErrorBoundary>
         <Router>
-          <Box sx={{ display: 'flex' }}>
+          <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             <AppBar
               position="fixed"
               sx={{
                 width: { sm: `calc(100% - ${drawerWidth}px)` },
                 ml: { sm: `${drawerWidth}px` },
+                zIndex: theme.zIndex.drawer + 1,
               }}
             >
               <Toolbar>
@@ -315,7 +359,12 @@ function App() {
                 }}
                 sx={{
                   display: { xs: 'block', sm: 'none' },
-                  '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                  '& .MuiDrawer-paper': { 
+                    boxSizing: 'border-box', 
+                    width: drawerWidth,
+                    top: 0,
+                    height: '100%'
+                  },
                 }}
               >
                 {drawer}
@@ -326,7 +375,12 @@ function App() {
                 variant="permanent"
                 sx={{
                   display: { xs: 'none', sm: 'block' },
-                  '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                  '& .MuiDrawer-paper': { 
+                    boxSizing: 'border-box', 
+                    width: drawerWidth,
+                    top: 0,
+                    height: '100%'
+                  },
                 }}
                 open
               >
@@ -338,38 +392,52 @@ function App() {
               component="main"
               sx={{
                 flexGrow: 1,
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 width: { sm: `calc(100% - ${drawerWidth}px)` },
-                mt: 8
+                mt: { xs: 7, sm: 8 },
+                minHeight: '100vh',
+                height: '100vh',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
-              <Routes>
-                {/* Main Dashboard */}
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                
-                {/* Analytics Routes */}
-                <Route path="/analytics/user-segments" element={<UserSegmentsPage />} />
-                <Route path="/analytics/user-journey" element={<UserJourneyPage />} />
-                <Route path="/analytics/personalization" element={<PersonalizationPage />} />
-                <Route path="/analytics/churn-prediction" element={<ChurnPredictionPage />} />
-                <Route path="/analytics/referral-insights" element={<ReferralInsightsPage />} />
-                <Route path="/analytics/raw-user-data" element={<RawUserDataPage />} />
-                <Route path="/analytics/ai-insights" element={<AIInsightsPage />} />
-                <Route path="/analytics/feature-usage" element={<FeatureUsagePage />} />
-                <Route path="/analytics/revenue-forecast" element={<RevenueForecastPage />} />
-                
-                {/* Sigma Framework Routes */}
-                <Route path="/sigma/status" element={<SigmaStatusPage />} />
-                <Route path="/sigma/playground" element={<SigmaPlaygroundPage />} />
-                <Route path="/sigma/data-apps-builder" element={<SigmaDataAppsBuilderPage />} />
-                <Route path="/sigma/input-tables" element={<InputTablesPage />} />
-                <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
-                <Route path="/sigma/actions" element={<ActionsPage />} />
-                
-                {/* Catch all route */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
+              <Box sx={{ 
+                flex: 1, 
+                overflow: 'auto',
+                '& > *': { 
+                  minHeight: '100%',
+                  width: '100%'
+                }
+              }}>
+                <Routes>
+                  {/* Main Dashboard */}
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  
+                  {/* Analytics Routes */}
+                  <Route path="/analytics/user-segments" element={<UserSegmentsPage />} />
+                  <Route path="/analytics/user-journey" element={<UserJourneyPage />} />
+                  <Route path="/analytics/personalization" element={<PersonalizationPage />} />
+                  <Route path="/analytics/churn-prediction" element={<ChurnPredictionPage />} />
+                  <Route path="/analytics/referral-insights" element={<ReferralInsightsPage />} />
+                  <Route path="/analytics/raw-user-data" element={<RawUserDataPage />} />
+                  <Route path="/analytics/ai-insights" element={<AIInsightsPage />} />
+                  <Route path="/analytics/feature-usage" element={<FeatureUsagePage />} />
+                  <Route path="/analytics/revenue-forecast" element={<RevenueForecastPage />} />
+                  
+                  {/* Sigma Framework Routes */}
+                  <Route path="/sigma/status" element={<SigmaStatusPage />} />
+                  <Route path="/sigma/playground" element={<SigmaPlaygroundPage />} />
+                  <Route path="/sigma/data-apps-builder" element={<SigmaDataAppsBuilderPage />} />
+                  <Route path="/sigma/input-tables" element={<InputTablesPage />} />
+                  <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
+                  <Route path="/sigma/actions" element={<ActionsPage />} />
+                  
+                  {/* Catch all route */}
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </Box>
             </Box>
           </Box>
         </Router>

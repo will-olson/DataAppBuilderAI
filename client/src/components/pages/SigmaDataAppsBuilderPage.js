@@ -1215,14 +1215,30 @@ const SigmaDataAppsBuilderPage = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Box sx={{ 
+      width: '100%', 
+      minHeight: '100vh',
+      p: { xs: 1, sm: 2, md: 3 },
+      boxSizing: 'border-box'
+    }}>
       {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" gutterBottom>
-          <BuildIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
+      <Box sx={{ mb: { xs: 2, sm: 3, md: 4 } }}>
+        <Typography 
+          variant="h3" 
+          gutterBottom
+          sx={{ 
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem', lg: '3rem' },
+            lineHeight: 1.2
+          }}
+        >
+          <BuildIcon sx={{ mr: { xs: 1, sm: 2 }, verticalAlign: 'middle', fontSize: 'inherit' }} />
           Sigma Data Apps Builder
         </Typography>
-        <Typography variant="h6" color="text.secondary">
+        <Typography 
+          variant="h6" 
+          color="text.secondary"
+          sx={{ fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' } }}
+        >
           Build true Sigma-compatible data applications with advanced AI capabilities
         </Typography>
       </Box>
@@ -1241,12 +1257,16 @@ const SigmaDataAppsBuilderPage = () => {
       )}
 
       {/* Main Builder Interface */}
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
         {/* Left Sidebar - Builder Tools */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+        <Grid item xs={12} lg={3} md={4}>
+          <Card sx={{ height: 'fit-content' }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1rem', sm: '1.125rem' } }}
+              >
                 Builder Tools
               </Typography>
               
@@ -1256,7 +1276,11 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={() => setTableBuilderOpen(true)}
-                  sx={{ mb: 1 }}
+                  sx={{ 
+                    mb: 1,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 0.75, sm: 1 }
+                  }}
                 >
                   Input Table
                 </Button>
@@ -1265,7 +1289,11 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="outlined"
                   startIcon={<AddIcon />}
                   onClick={() => setElementBuilderOpen(true)}
-                  sx={{ mb: 1 }}
+                  sx={{ 
+                    mb: 1,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 0.75, sm: 1 }
+                  }}
                 >
                   Layout Element
                 </Button>
@@ -1274,7 +1302,11 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="outlined"
                   startIcon={<AddIcon />}
                   onClick={() => setWorkflowBuilderOpen(true)}
-                  sx={{ mb: 1 }}
+                  sx={{ 
+                    mb: 1,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 0.75, sm: 1 }
+                  }}
                 >
                   Workflow
                 </Button>
@@ -1283,7 +1315,11 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="outlined"
                   startIcon={<AddIcon />}
                   onClick={() => setAiBuilderOpen(true)}
-                  sx={{ mb: 1 }}
+                  sx={{ 
+                    mb: 1,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 0.75, sm: 1 }
+                  }}
                 >
                   AI Feature
                 </Button>
@@ -1291,7 +1327,11 @@ const SigmaDataAppsBuilderPage = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography 
+                variant="subtitle2" 
+                gutterBottom
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+              >
                 Quick Actions
               </Typography>
               
@@ -1301,6 +1341,7 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="text"
                   startIcon={<PlayIcon />}
                   onClick={testDataApp}
+                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
                 >
                   Test App
                 </Button>
@@ -1309,6 +1350,7 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="text"
                   startIcon={<DownloadIcon />}
                   onClick={exportDataApp}
+                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
                 >
                   Export
                 </Button>
@@ -1317,6 +1359,7 @@ const SigmaDataAppsBuilderPage = () => {
                   variant="text"
                   startIcon={<RefreshIcon />}
                   onClick={() => window.location.reload()}
+                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
                 >
                   Reset
                 </Button>
@@ -1326,14 +1369,25 @@ const SigmaDataAppsBuilderPage = () => {
         </Grid>
 
         {/* Main Content Area */}
-        <Grid item xs={12} md={9}>
+        <Grid item xs={12} lg={9} md={8}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
               {/* Tabs */}
               <Tabs 
                 value={activeTab} 
                 onChange={(e, newValue) => setActiveTab(newValue)}
-                sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}
+                sx={{ 
+                  borderBottom: 1, 
+                  borderColor: 'divider', 
+                  mb: 3,
+                  '& .MuiTab-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    minHeight: { xs: 40, sm: 48 },
+                    px: { xs: 1, sm: 2 }
+                  }
+                }}
+                variant="scrollable"
+                scrollButtons="auto"
               >
                 <Tab label="Configuration" icon={<SettingsIcon />} />
                 <Tab label="Input Tables" icon={<TableChartIcon />} />
@@ -1352,17 +1406,32 @@ const SigmaDataAppsBuilderPage = () => {
 
       {/* Sigma Workbook Preview */}
       {workbookLoaded && (
-        <Box sx={{ mt: 4 }}>
+        <Box sx={{ mt: { xs: 2, sm: 3, md: 4 } }}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1rem', sm: '1.125rem' } }}
+              >
                 Sigma Workbook Preview
               </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                gutterBottom
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+              >
                 Real-time preview of your data app in Sigma
               </Typography>
               
-              <Box sx={{ mt: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              <Box sx={{ 
+                mt: 2, 
+                border: '1px solid', 
+                borderColor: 'divider', 
+                borderRadius: 1,
+                overflow: 'hidden'
+              }}>
                 <SigmaWorkbookEmbed
                   workbookUrl={workbookUrl}
                   workbookId={workbookId}
@@ -1381,25 +1450,46 @@ const SigmaDataAppsBuilderPage = () => {
 
       {/* Event Log */}
       {workbookEvents.length > 0 && (
-        <Box sx={{ mt: 4 }}>
+        <Box sx={{ mt: { xs: 2, sm: 3, md: 4 } }}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1rem', sm: '1.125rem' } }}
+              >
                 Event Log
               </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                gutterBottom
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+              >
                 Real-time Sigma workbook events and interactions
               </Typography>
               
-              <List sx={{ maxHeight: 300, overflow: 'auto' }}>
+              <List sx={{ 
+                maxHeight: 300, 
+                overflow: 'auto',
+                '& .MuiListItem-root': {
+                  py: { xs: 0.5, sm: 1 }
+                }
+              }}>
                 {workbookEvents.map((event) => (
                   <ListItem key={event.id} divider>
                     <ListItemIcon>
-                      <EventIcon color="primary" />
+                      <EventIcon color="primary" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
                     </ListItemIcon>
                     <ListItemText
                       primary={event.type}
                       secondary={`${new Date(event.timestamp).toLocaleTimeString()} - ${JSON.stringify(event.data)}`}
+                      primaryTypographyProps={{
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                      }}
                     />
                   </ListItem>
                 ))}
@@ -1420,7 +1510,7 @@ const SigmaDataAppsBuilderPage = () => {
         autoHideDuration={6000}
         message="Data app updated successfully"
       />
-    </Container>
+    </Box>
   );
 };
 

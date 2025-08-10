@@ -9,7 +9,11 @@ import {
   Alert,
   Paper,
   Button,
-  Divider
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Container,
+  Stack
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
@@ -32,6 +36,10 @@ import SigmaModeToggle from '../SigmaModeToggle';
 import { Link } from 'react-router-dom';
 
 const SigmaStatusPage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   // Memoize API functions to prevent recreation on every render
   const getSigmaStatus = React.useCallback(() => apiClient.getSigmaStatus(), []);
   const getSigmaCapabilities = React.useCallback(() => apiClient.getSigmaCapabilities(), []);
@@ -230,42 +238,44 @@ const SigmaStatusPage = () => {
     });
     
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Error loading Sigma status
-        </Typography>
-        <Typography variant="body2" gutterBottom>
-          {error.message || error}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          API Base URL: {process.env.REACT_APP_API_URL || 'http://localhost:5555/api'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Environment: {process.env.NODE_ENV || 'development'}
-        </Typography>
-        <Box mt={2}>
-          <Button 
-            onClick={() => window.location.reload()} 
-            variant="outlined" 
-            sx={{ mr: 1 }}
-          >
-            Retry
-          </Button>
-          <Button 
-            onClick={() => {
-              console.log('Debug Info:', {
-                apiUrl: process.env.REACT_APP_API_URL,
-                nodeEnv: process.env.NODE_ENV,
-                errors: { statusError, capsError, healthError, userError, countError }
-              });
-            }} 
-            variant="text" 
-            size="small"
-          >
-            Debug Info
-          </Button>
-        </Box>
-      </Alert>
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Error loading Sigma status
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            {error.message || error}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            API Base URL: {process.env.REACT_APP_API_URL || 'http://localhost:5555/api'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Environment: {process.env.NODE_ENV || 'development'}
+          </Typography>
+          <Box mt={2}>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outlined" 
+              sx={{ mr: 1 }}
+            >
+              Retry
+            </Button>
+            <Button 
+              onClick={() => {
+                console.log('Debug Info:', {
+                  apiUrl: process.env.REACT_APP_API_URL,
+                  nodeEnv: process.env.NODE_ENV,
+                  errors: { statusError, capsError, healthError, userError, countError }
+                });
+              }} 
+              variant="text" 
+              size="small"
+            >
+              Debug Info
+            </Button>
+          </Box>
+        </Alert>
+      </Container>
     );
   }
 
@@ -323,15 +333,37 @@ const SigmaStatusPage = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ 
+      width: '100%', 
+      minHeight: '100%',
+      py: { xs: 2, sm: 3 },
+      px: { xs: 1, sm: 2 },
+      overflow: 'visible',
+      '& .MuiCard-root': {
+        '@media (max-width:600px)': {
+          marginBottom: 2,
+        }
+      },
+      '& .MuiGrid-container': {
+        '@media (max-width:600px)': {
+          marginLeft: -1,
+          marginRight: -1,
+        }
+      },
+      '& .MuiGrid-item': {
+        '@media (max-width:600px)': {
+          paddingLeft: 1,
+          paddingRight: 1,
+        }
+      }
+    }}>
       {/* Notifications */}
       {notifications.length > 0 && (
-        <Box sx={{ mb: 2 }}>
+        <Stack spacing={1} sx={{ mb: 3 }}>
           {notifications.map((notification) => (
             <Alert
               key={notification.id}
               severity={notification.type}
-              sx={{ mb: 1 }}
               onClose={() => removeNotification(notification.id)}
               action={
                 <Button
@@ -351,16 +383,27 @@ const SigmaStatusPage = () => {
               </Typography>
             </Alert>
           ))}
-        </Box>
+        </Stack>
       )}
       
       {/* Sigma Mode Toggle Component */}
-      <SigmaModeToggle />
+      <Box sx={{ mb: 3 }}>
+        <SigmaModeToggle />
+      </Box>
       
       {/* System Status Summary */}
-      <Card sx={{ mb: 3, bgcolor: 'grey.50' }}>
+      <Card sx={{ 
+        mb: 3, 
+        bgcolor: 'grey.50',
+        '@media (max-width:600px)': {
+          mb: 2,
+          '& .MuiCardContent-root': {
+            padding: 2,
+          }
+        }
+      }}>
         <CardContent>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2} flexWrap="wrap" gap={2}>
             <Box display="flex" alignItems="center">
               <InfoIcon sx={{ mr: 1 }} />
               <Typography variant="h6" component="h2">
@@ -372,13 +415,19 @@ const SigmaStatusPage = () => {
               size="small"
               onClick={smartRefresh}
               startIcon={<InfoIcon />}
+              sx={{
+                '@media (max-width:600px)': {
+                  fontSize: '0.75rem',
+                  padding: '4px 8px',
+                }
+              }}
             >
               Refresh Overview
             </Button>
           </Box>
           
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={6} md={3}>
               <Box textAlign="center">
                 <Typography variant="h4" color={healthData.status === 'healthy' ? 'success.main' : 'error.main'}>
                   {healthData.status === 'healthy' ? '✅' : '❌'}
@@ -390,7 +439,7 @@ const SigmaStatusPage = () => {
               </Box>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={6} md={3}>
               <Box textAlign="center">
                 <Typography variant="h4" color="primary.main">
                   {sigmaData.sigma_mode || 'standalone'}
@@ -402,7 +451,7 @@ const SigmaStatusPage = () => {
               </Box>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={6} md={3}>
               <Box textAlign="center">
                 <Typography variant="h4" color="secondary.main">
                   {userCount}
@@ -414,7 +463,7 @@ const SigmaStatusPage = () => {
               </Box>
             </Grid>
             
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={6} md={3}>
               <Box textAlign="center">
                 <Typography variant="h4" color={autoRefresh ? 'success.main' : 'default.main'}>
                   {autoRefresh ? '🔄' : '⏸️'}
@@ -438,7 +487,7 @@ const SigmaStatusPage = () => {
                 Current Mode: {sigmaData.sigma_mode || 'standalone'} | Database: {sigmaData.database_mode || 'sqlite'}
               </Typography>
             </Box>
-            <Box display="flex" gap={1} alignItems="center">
+            <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
               <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
                 Interval:
               </Typography>
@@ -475,14 +524,24 @@ const SigmaStatusPage = () => {
       </Card>
       
       {/* Connection Status Summary */}
-      <Card sx={{ mb: 3, bgcolor: healthData.status === 'healthy' ? 'success.light' : 'error.light', color: 'white' }}>
+      <Card sx={{ 
+        mb: 3, 
+        bgcolor: healthData.status === 'healthy' ? 'success.light' : 'error.light', 
+        color: 'white',
+        '@media (max-width:600px)': {
+          mb: 2,
+          '& .MuiCardContent-root': {
+            padding: 2,
+          }
+        }
+      }}>
         <CardContent>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
-            <Box display="flex" alignItems="center">
+          <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+            <Box display="flex" alignItems="center" flexWrap="wrap">
               {healthData.status === 'healthy' ? (
-                <CheckIcon sx={{ mr: 1, fontSize: 40 }} />
+                <CheckIcon sx={{ mr: 1, fontSize: { xs: 32, sm: 40 } }} />
               ) : (
-                <ErrorIcon sx={{ mr: 1, fontSize: 40 }} />
+                <ErrorIcon sx={{ mr: 1, fontSize: { xs: 32, sm: 40 } }} />
               )}
               <Box>
                 <Typography variant="h5" component="h2" gutterBottom>
@@ -506,12 +565,20 @@ const SigmaStatusPage = () => {
                 )}
               </Box>
             </Box>
-            <Box display="flex" alignItems="center" gap={2}>
+            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
               <Button
                 variant="outlined"
                 size="small"
                 onClick={smartRefresh}
-                sx={{ color: 'white', borderColor: 'white', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                sx={{ 
+                  color: 'white', 
+                  borderColor: 'white', 
+                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                  '@media (max-width:600px)': {
+                    fontSize: '0.75rem',
+                    padding: '4px 8px',
+                  }
+                }}
               >
                 Smart Refresh
               </Button>
@@ -519,7 +586,15 @@ const SigmaStatusPage = () => {
                 variant="outlined"
                 size="small"
                 onClick={refreshAllData}
-                sx={{ color: 'white', borderColor: 'white', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                sx={{ 
+                  color: 'white', 
+                  borderColor: 'white', 
+                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                  '@media (max-width:600px)': {
+                    fontSize: '0.75rem',
+                    padding: '4px 8px',
+                  }
+                }}
               >
                 Refresh Status
               </Button>
@@ -531,7 +606,11 @@ const SigmaStatusPage = () => {
                   color: 'white', 
                   borderColor: 'white', 
                   bgcolor: autoRefresh ? 'rgba(255,255,255,0.2)' : 'transparent',
-                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } 
+                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                  '@media (max-width:600px)': {
+                    fontSize: '0.75rem',
+                    padding: '4px 8px',
+                  }
                 }}
               >
                 {autoRefresh ? 'Auto-Refresh ON' : 'Auto-Refresh OFF'}
@@ -540,20 +619,27 @@ const SigmaStatusPage = () => {
                 icon={healthData.status === 'healthy' ? <CheckIcon /> : <ErrorIcon />}
                 label={healthData.status === 'healthy' ? 'Connected' : 'Issues Detected'}
                 color={healthData.status === 'healthy' ? 'success' : 'error'}
-                sx={{ color: 'white', bgcolor: healthData.status === 'healthy' ? 'success.dark' : 'error.dark' }}
+                sx={{ 
+                  color: 'white', 
+                  bgcolor: healthData.status === 'healthy' ? 'success.dark' : 'error.dark',
+                  '@media (max-width:600px)': {
+                    fontSize: '0.75rem',
+                    height: 24,
+                  }
+                }}
               />
             </Box>
           </Box>
         </CardContent>
       </Card>
 
-      {/* Existing Status Content */}
-      <Grid container spacing={3}>
+      {/* Main Content Grid */}
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ width: '100%' }}>
         {/* Database Connection & User Count */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2} flexWrap="wrap" gap={2}>
                 <Box display="flex" alignItems="center">
                   <StorageIcon sx={{ mr: 1 }} />
                   <Typography variant="h6" component="h2">
@@ -576,7 +662,7 @@ const SigmaStatusPage = () => {
               
               {healthData ? (
                 <Box>
-                  <Box display="flex" alignItems="center" mb={2}>
+                  <Box display="flex" alignItems="center" mb={2} flexWrap="wrap" gap={1}>
                     <Typography variant="body2" sx={{ mr: 1 }}>
                       Status:
                     </Typography>
@@ -648,77 +734,76 @@ const SigmaStatusPage = () => {
         </Grid>
 
         {/* Sigma Framework Status */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  <AssessmentIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Framework Status
-                </Typography>
-                
-                <Box sx={{ mb: 2 }}>
-                  <Chip 
-                    label={`Mode: ${sigmaStatus?.mode || 'Unknown'}`}
-                    color={getModeColor(sigmaStatus?.mode)}
-                    sx={{ mb: 1 }}
-                  />
-                  <Chip 
-                    label={`Status: ${sigmaStatus?.status || 'Unknown'}`}
-                    color={sigmaStatus?.status === 'active' ? 'success' : 'error'}
-                    sx={{ mb: 1 }}
-                  />
-                </Box>
-                
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Current Sigma framework operational mode and status.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="h6" gutterBottom>
+                <AssessmentIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                Framework Status
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                <Chip 
+                  label={`Mode: ${sigmaStatus?.mode || 'Unknown'}`}
+                  color={getModeColor(sigmaStatus?.status)}
+                  sx={{ mb: 1 }}
+                />
+                <Chip 
+                  label={`Status: ${sigmaStatus?.status || 'Unknown'}`}
+                  color={sigmaStatus?.status === 'active' ? 'success' : 'error'}
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+              
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Current Sigma framework operational mode and status.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  <IntegrationInstructionsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  SDK Integration
-                </Typography>
-                
-                <Box sx={{ mb: 2 }}>
-                  <Chip 
-                    label="React SDK v0.7.0"
-                    color="primary"
-                    sx={{ mb: 1 }}
-                  />
-                  <Chip 
-                    label="Embed SDK v0.7.0"
-                    color="secondary"
-                    sx={{ mb: 1 }}
-                  />
-                  <Chip 
-                    label="TypeScript Support"
-                    color="info"
-                    sx={{ mb: 1 }}
-                  />
-                </Box>
-                
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Official Sigma React SDK integration for true platform compatibility.
-                </Typography>
-                
-                <Button
-                  variant="contained"
-                  component={Link}
-                  to="/sigma/playground"
-                  startIcon={<PlayArrowIcon />}
-                  sx={{ mt: 1 }}
-                >
-                  Open Development Playground
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
+        {/* SDK Integration */}
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="h6" gutterBottom>
+                <IntegrationInstructionsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                SDK Integration
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                <Chip 
+                  label="React SDK v0.7.0"
+                  color="primary"
+                  sx={{ mb: 1 }}
+                />
+                <Chip 
+                  label="Embed SDK v0.7.0"
+                  color="secondary"
+                  sx={{ mb: 1 }}
+                />
+                <Chip 
+                  label="TypeScript Support"
+                  color="info"
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+              
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Official Sigma React SDK integration for true platform compatibility.
+              </Typography>
+              
+              <Button
+                variant="contained"
+                component={Link}
+                to="/sigma/playground"
+                startIcon={<PlayArrowIcon />}
+                sx={{ mt: 'auto' }}
+              >
+                Open Development Playground
+              </Button>
+            </CardContent>
+          </Card>
         </Grid>
 
         {/* New Sigma SDK Features */}
@@ -730,14 +815,14 @@ const SigmaStatusPage = () => {
                 Sigma SDK Integration Features
               </Typography>
               
-              <Grid container spacing={3}>
+              <Grid container spacing={{ xs: 2, sm: 3 }}>
                 <Grid item xs={12} md={4}>
-                  <Box sx={{ textAlign: 'center', p: 2 }}>
-                    <IntegrationInstructionsIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                  <Box sx={{ textAlign: 'center', p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <IntegrationInstructionsIcon sx={{ fontSize: { xs: 32, sm: 48 }, color: 'primary.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
                       True Platform Compatibility
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
                       Use Sigma's official React SDK for seamless integration with Sigma's platform.
                       Build data applications that can be directly imported into Sigma.
                     </Typography>
@@ -745,12 +830,12 @@ const SigmaStatusPage = () => {
                 </Grid>
                 
                 <Grid item xs={12} md={4}>
-                  <Box sx={{ textAlign: 'center', p: 2 }}>
-                    <EventIcon sx={{ fontSize: 48, color: 'secondary.main', mb: 2 }} />
+                  <Box sx={{ textAlign: 'center', p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <EventIcon sx={{ fontSize: { xs: 32, sm: 48 }, color: 'secondary.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
                       Real-time Communication
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
                       PostMessage-based communication with Sigma iframes. Handle workbook lifecycle,
                       user interactions, and data synchronization in real-time.
                     </Typography>
@@ -758,12 +843,12 @@ const SigmaStatusPage = () => {
                 </Grid>
                 
                 <Grid item xs={12} md={4}>
-                  <Box sx={{ textAlign: 'center', p: 2 }}>
-                    <CodeIcon sx={{ fontSize: 48, color: 'info.main', mb: 2 }} />
+                  <Box sx={{ textAlign: 'center', p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <CodeIcon sx={{ fontSize: { xs: 32, sm: 48 }, color: 'info.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
                       Developer Experience
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
                       TypeScript support, React hooks, and comprehensive event handling.
                       Perfect playground for developing Sigma-compatible data applications.
                     </Typography>
@@ -778,7 +863,7 @@ const SigmaStatusPage = () => {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2} flexWrap="wrap" gap={2}>
                 <Box display="flex" alignItems="center">
                   <SettingsIcon sx={{ mr: 1 }} />
                   <Typography variant="h6" component="h2">
@@ -854,8 +939,8 @@ const SigmaStatusPage = () => {
                     </Box>
                   )}
                   
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50', mt: 2 }}>
-                    <Typography variant="body2" component="pre" sx={{ fontSize: '0.8rem' }}>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50', mt: 2, overflow: 'auto', maxHeight: 300 }}>
+                    <Typography variant="body2" component="pre" sx={{ fontSize: '0.8rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {JSON.stringify(capabilitiesData, null, 2)}
                     </Typography>
                   </Paper>
