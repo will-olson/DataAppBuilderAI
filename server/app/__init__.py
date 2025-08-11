@@ -2,6 +2,27 @@
 Unified Flask Application Factory with Sigma Framework Integration
 """
 
+# Load environment variables from .env file FIRST, before any other imports
+import os
+from dotenv import load_dotenv
+
+# Get the directory where this file is located
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Go up one level to the server directory
+server_dir = os.path.dirname(current_dir)
+# Look for .env file in the server directory
+env_path = os.path.join(server_dir, '.env')
+load_dotenv(env_path)
+
+# Debug: Print environment variables
+print("DEBUG: Environment variables after load_dotenv:")
+print(f"DEBUG: SIGMA_API_ENABLED = {os.environ.get('SIGMA_API_ENABLED')}")
+print(f"DEBUG: SIGMA_API_CLIENT_ID = {os.environ.get('SIGMA_API_CLIENT_ID')}")
+print(f"DEBUG: SIGMA_API_CLIENT_SECRET = {os.environ.get('SIGMA_API_CLIENT_SECRET')}")
+print(f"DEBUG: Current working directory = {os.getcwd()}")
+print(f"DEBUG: .env file path = {env_path}")
+print(f"DEBUG: .env file exists = {os.path.exists(env_path)}")
+
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -10,11 +31,6 @@ from sqlalchemy import text
 import logging
 from config import get_config, update_sigma_mode
 from datetime import datetime
-from dotenv import load_dotenv
-import os
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize extensions
 db = SQLAlchemy()

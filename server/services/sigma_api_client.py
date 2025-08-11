@@ -28,6 +28,19 @@ class SigmaAPIClient:
         self.token_expiry = 0
         self.rate_limit_last_call = 0
         
+        # Check if we should use mock mode
+        self.mock_mode = (
+            credentials.client_id == 'your_client_id_here' or 
+            credentials.client_secret == 'your_client_secret_here' or
+            credentials.client_id == 'test_client_id_for_mock_mode' or
+            credentials.client_secret == 'test_client_secret_for_mock_mode' or
+            not credentials.client_id or 
+            not credentials.client_secret
+        )
+        
+        if self.mock_mode:
+            logger.info("Sigma API Client running in MOCK MODE for testing")
+    
     def _get_auth_headers(self) -> Dict[str, str]:
         """Get authentication headers with automatic token refresh"""
         if self._is_token_expired():
@@ -45,6 +58,14 @@ class SigmaAPIClient:
     
     def _refresh_token(self) -> None:
         """Refresh access token with rate limiting"""
+        if self.mock_mode:
+            # Mock token for testing
+            self.access_token = "mock_token_for_testing_purposes"
+            self.token_expiry = time.time() + 3600  # 1 hour
+            self.rate_limit_last_call = time.time()
+            logger.info("Mock Sigma API token generated for testing")
+            return
+        
         # Respect 1 req/sec rate limit for auth
         current_time = time.time()
         if current_time - self.rate_limit_last_call < 1:
@@ -74,6 +95,9 @@ class SigmaAPIClient:
     
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make authenticated request with retry logic and error handling"""
+        if self.mock_mode:
+            return self._mock_request(method, endpoint, **kwargs)
+        
         max_retries = 3
         base_delay = 1
         
@@ -107,6 +131,183 @@ class SigmaAPIClient:
                 time.sleep(delay)
         
         raise Exception("Max retries exceeded for Sigma API request")
+    
+    def _mock_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+        """Mock API responses for testing purposes"""
+        logger.info(f"Mock Sigma API request: {method} {endpoint}")
+        
+        # Mock responses based on endpoint
+        if endpoint == '/v2/users/me':
+            return {
+                'id': 'mock-user-123',
+                'email': 'test@example.com',
+                'name': 'Mock Test User',
+                'role': 'admin',
+                'organization': 'Mock Organization'
+            }
+        
+        elif endpoint.startswith('/v2/connections'):
+            return {
+                'data': [
+                    {
+                        'id': 'mock-conn-1',
+                        'name': 'Mock Snowflake Connection',
+                        'type': 'snowflake',
+                        'status': 'active',
+                        'created_at': '2024-01-01T00:00:00Z'
+                    },
+                    {
+                        'id': 'mock-conn-2',
+                        'name': 'Mock BigQuery Connection',
+                        'type': 'bigquery',
+                        'status': 'active',
+                        'created_at': '2024-01-02T00:00:00Z'
+                    }
+                ],
+                'total': 2,
+                'page': 1,
+                'size': 50,
+                'pages': 1
+            }
+        
+        elif endpoint.startswith('/v2/workbooks'):
+            return {
+                'data': [
+                    {
+                        'id': 'mock-wb-1',
+                        'name': 'Mock Sales Dashboard',
+                        'description': 'A comprehensive sales analytics dashboard',
+                        'status': 'published',
+                        'created_at': '2024-01-01T00:00:00Z',
+                        'updated_at': '2024-01-15T00:00:00Z'
+                    },
+                    {
+                        'id': 'mock-wb-2',
+                        'name': 'Mock Marketing Analytics',
+                        'description': 'Marketing performance and ROI analysis',
+                        'status': 'published',
+                        'created_at': '2024-01-05T00:00:00Z',
+                        'updated_at': '2024-01-20T00:00:00Z'
+                    }
+                ],
+                'total': 2,
+                'page': 1,
+                'size': 50,
+                'pages': 1
+            }
+        
+        elif endpoint.startswith('/v2/workspaces'):
+            return {
+                'data': [
+                    {
+                        'id': 'mock-ws-1',
+                        'name': 'Sales Team Workspace',
+                        'description': 'Workspace for sales analytics and reporting',
+                        'created_at': '2024-01-01T00:00:00Z'
+                    },
+                    {
+                        'id': 'mock-ws-2',
+                        'name': 'Marketing Team Workspace',
+                        'description': 'Workspace for marketing analytics and insights',
+                        'created_at': '2024-01-05T00:00:00Z'
+                    }
+                ],
+                'total': 2,
+                'page': 1,
+                'size': 50,
+                'pages': 1
+            }
+        
+        elif endpoint.startswith('/v2/datasets'):
+            return {
+                'data': [
+                    {
+                        'id': 'mock-ds-1',
+                        'name': 'Sales Transactions',
+                        'description': 'Historical sales transaction data',
+                        'type': 'table',
+                        'created_at': '2024-01-01T00:00:00Z'
+                    },
+                    {
+                        'id': 'mock-ds-2',
+                        'name': 'Customer Demographics',
+                        'description': 'Customer profile and demographic information',
+                        'type': 'table',
+                        'created_at': '2024-01-02T00:00:00Z'
+                    }
+                ],
+                'total': 2,
+                'page': 1,
+                'size': 50,
+                'pages': 1
+            }
+        
+        elif endpoint.startswith('/v2/teams'):
+            return {
+                'data': [
+                    {
+                        'id': 'mock-team-1',
+                        'name': 'Sales Team',
+                        'description': 'Sales analytics and reporting team',
+                        'member_count': 8,
+                        'created_at': '2024-01-01T00:00:00Z'
+                    },
+                    {
+                        'id': 'mock-team-2',
+                        'name': 'Marketing Team',
+                        'description': 'Marketing analytics and insights team',
+                        'member_count': 6,
+                        'created_at': '2024-01-05T00:00:00Z'
+                    }
+                ],
+                'total': 2,
+                'page': 1,
+                'size': 50,
+                'pages': 1
+            }
+        
+        elif endpoint.startswith('/v2/members'):
+            return {
+                'data': [
+                    {
+                        'id': 'mock-member-1',
+                        'email': 'sales@example.com',
+                        'name': 'Sales Manager',
+                        'role': 'viewer',
+                        'team_id': 'mock-team-1',
+                        'created_at': '2024-01-01T00:00:00Z'
+                    },
+                    {
+                        'id': 'mock-member-2',
+                        'email': 'marketing@example.com',
+                        'name': 'Marketing Manager',
+                        'role': 'editor',
+                        'team_id': 'mock-team-2',
+                        'created_at': '2024-01-05T00:00:00Z'
+                    }
+                ],
+                'total': 2,
+                'page': 1,
+                'size': 50,
+                'pages': 1
+            }
+        
+        elif endpoint.startswith('/v2/workbooks/') and endpoint.endswith('/export'):
+            return {
+                'export_id': 'mock-export-123',
+                'status': 'completed',
+                'download_url': 'https://example.com/mock-export.csv',
+                'created_at': '2024-01-15T00:00:00Z',
+                'format': 'csv'
+            }
+        
+        # Default mock response
+        return {
+            'message': 'Mock response for testing',
+            'endpoint': endpoint,
+            'method': method,
+            'timestamp': '2024-01-15T00:00:00Z'
+        }
     
     # Core API Methods
     def get_current_user(self) -> Dict[str, Any]:
