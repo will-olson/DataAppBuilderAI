@@ -187,6 +187,44 @@ const SigmaAIWorkbookBuilderPage = () => {
     { autoExecute: true }
   );
 
+  // Ensure aiComponents always has the correct structure
+  useEffect(() => {
+    if (!aiComponents || typeof aiComponents !== 'object') {
+      console.warn('aiComponents state corrupted, re-initializing with default structure');
+      setAiComponents({
+        inputTables: [],
+        layoutElements: [],
+        actions: [],
+        workflows: [],
+        visualizations: [],
+        filters: []
+      });
+    } else {
+      // Ensure all required properties exist
+      const hasAllProperties = [
+        'inputTables', 'layoutElements', 'actions', 
+        'workflows', 'visualizations', 'filters'
+      ].every(prop => Array.isArray(aiComponents[prop]));
+      
+      if (!hasAllProperties) {
+        console.warn('aiComponents missing required properties, fixing structure');
+        setAiComponents(prev => ({
+          inputTables: Array.isArray(prev?.inputTables) ? prev.inputTables : [],
+          layoutElements: Array.isArray(prev?.layoutElements) ? prev.layoutElements : [],
+          actions: Array.isArray(prev?.actions) ? prev.actions : [],
+          workflows: Array.isArray(prev?.workflows) ? prev.workflows : [],
+          visualizations: Array.isArray(prev?.visualizations) ? prev.visualizations : [],
+          filters: Array.isArray(prev?.filters) ? prev.filters : []
+        }));
+      }
+    }
+  }, [aiComponents]);
+
+  // Debug logging for aiComponents state changes
+  useEffect(() => {
+    console.log('aiComponents state updated:', aiComponents);
+  }, [aiComponents]);
+
   // AI Assistant Functions
   const generateAISuggestions = async (query, context = {}) => {
     setAiLoading(true);
@@ -195,23 +233,43 @@ const SigmaAIWorkbookBuilderPage = () => {
       const response = await apiClient.getSigmaAISuggestions(query, context);
       if (response.success && response.suggestions) {
         setAiSuggestions(response.suggestions);
-        setAiHistory(prev => [...prev, {
-          id: Date.now(),
-          query,
-          response: response.suggestions,
-          timestamp: new Date().toISOString()
-        }]);
+        setAiHistory(prev => {
+          if (Array.isArray(prev)) {
+            return [...prev, {
+              id: Date.now(),
+              query,
+              response: response.suggestions,
+              timestamp: new Date().toISOString()
+            }];
+          }
+          return [{
+            id: Date.now(),
+            query,
+            response: response.suggestions,
+            timestamp: new Date().toISOString()
+          }];
+        });
         return response;
       } else {
         // Fallback to simulated response if API fails
         const fallbackResponse = await simulateAIResponse(query, context);
         setAiSuggestions(fallbackResponse.suggestions);
-        setAiHistory(prev => [...prev, {
-          id: Date.now(),
-          query,
-          response: fallbackResponse.suggestions,
-          timestamp: new Date().toISOString()
-        }]);
+        setAiHistory(prev => {
+          if (Array.isArray(prev)) {
+            return [...prev, {
+              id: Date.now(),
+              query,
+              response: fallbackResponse.suggestions,
+              timestamp: new Date().toISOString()
+            }];
+          }
+          return [{
+            id: Date.now(),
+            query,
+            response: fallbackResponse.suggestions,
+            timestamp: new Date().toISOString()
+          }];
+        });
         addNotification('Using fallback AI suggestions (API unavailable)', 'warning');
         return fallbackResponse;
       }
@@ -220,12 +278,22 @@ const SigmaAIWorkbookBuilderPage = () => {
       // Fallback to simulated response
       const fallbackResponse = await simulateAIResponse(query, context);
       setAiSuggestions(fallbackResponse.suggestions);
-      setAiHistory(prev => [...prev, {
-        id: Date.now(),
-        query,
-        response: fallbackResponse.suggestions,
-        timestamp: new Date().toISOString()
-      }]);
+      setAiHistory(prev => {
+        if (Array.isArray(prev)) {
+          return [...prev, {
+            id: Date.now(),
+            query,
+            response: fallbackResponse.suggestions,
+            timestamp: new Date().toISOString()
+          }];
+        }
+        return [{
+          id: Date.now(),
+          query,
+          response: fallbackResponse.suggestions,
+          timestamp: new Date().toISOString()
+        }];
+      });
       addNotification(`AI suggestion generation failed: ${error.message}. Using fallback suggestions.`, 'warning');
       return fallbackResponse;
     } finally {
@@ -336,9 +404,9 @@ const SigmaAIWorkbookBuilderPage = () => {
       case 'visualization':
         setWorkbookConfig(prev => ({
           ...prev,
-          visualizations: [...prev.visualizations, {
+          visualizations: [...(prev.visualizations || []), {
             id: Date.now(),
-            type: suggestion.items[0]?.toLowerCase().includes('bar') ? 'bar' : 'chart',
+            type: suggestion.items && Array.isArray(suggestion.items) && suggestion.items[0]?.toLowerCase().includes('bar') ? 'bar' : 'chart',
             title: suggestion.title,
             description: suggestion.description,
             config: suggestion.implementation
@@ -348,11 +416,11 @@ const SigmaAIWorkbookBuilderPage = () => {
       case 'input_table':
         setAiComponents(prev => ({
           ...prev,
-          inputTables: [...prev.inputTables, {
+          inputTables: [...(prev.inputTables || []), {
             id: Date.now(),
             name: 'AI-Suggested Input Table',
             description: suggestion.description,
-            columns: suggestion.items.map(item => ({
+            columns: (suggestion.items && Array.isArray(suggestion.items) ? suggestion.items : []).map(item => ({
               name: item.split(' ')[0],
               type: 'text',
               description: item
@@ -363,11 +431,11 @@ const SigmaAIWorkbookBuilderPage = () => {
       case 'workflow':
         setAiComponents(prev => ({
           ...prev,
-          workflows: [...prev.workflows, {
+          workflows: [...(prev.workflows || []), {
             id: Date.now(),
             name: 'AI-Suggested Workflow',
             description: suggestion.description,
-            steps: suggestion.items.map((item, index) => ({
+            steps: (suggestion.items && Array.isArray(suggestion.items) ? suggestion.items : []).map((item, index) => ({
               id: index,
               name: item,
               type: 'action',
@@ -379,7 +447,7 @@ const SigmaAIWorkbookBuilderPage = () => {
       case 'layout':
         setAiComponents(prev => ({
           ...prev,
-          layoutElements: [...prev.layoutElements, {
+          layoutElements: [...(prev.layoutElements || []), {
             id: Date.now(),
             name: 'AI-Suggested Layout',
             type: 'container',
@@ -409,7 +477,16 @@ const SigmaAIWorkbookBuilderPage = () => {
         }));
         
         if (config.workbook.components) {
-          setAiComponents(config.workbook.components);
+          // Ensure components have the correct structure with empty arrays as fallbacks
+          const apiComponents = config.workbook.components;
+          setAiComponents({
+            inputTables: apiComponents.inputTables || [],
+            layoutElements: apiComponents.layoutElements || [],
+            actions: apiComponents.actions || [],
+            workflows: apiComponents.workflows || [],
+            visualizations: apiComponents.visualizations || [],
+            filters: apiComponents.filters || []
+          });
         }
         
         addNotification('AI-generated workbook configuration created successfully!', 'success');
@@ -470,7 +547,18 @@ const SigmaAIWorkbookBuilderPage = () => {
       try {
         const config = JSON.parse(e.target.result);
         setWorkbookConfig(config);
-        setAiComponents(config.components || {});
+        
+        // Ensure aiComponents always has the correct structure with empty arrays
+        const importedComponents = config.components || {};
+        setAiComponents({
+          inputTables: importedComponents.inputTables || [],
+          layoutElements: importedComponents.layoutElements || [],
+          actions: importedComponents.actions || [],
+          workflows: importedComponents.workflows || [],
+          visualizations: importedComponents.visualizations || [],
+          filters: importedComponents.filters || []
+        });
+        
         addNotification('Workbook configuration imported successfully', 'success');
       } catch (error) {
         addNotification('Failed to import workbook configuration', 'error');
@@ -487,14 +575,24 @@ const SigmaAIWorkbookBuilderPage = () => {
       severity,
       timestamp: new Date().toISOString()
     };
-    setNotifications(prev => [notification, ...prev.slice(0, 9)]);
+    setNotifications(prev => {
+      if (Array.isArray(prev)) {
+        return [notification, ...prev.slice(0, 9)];
+      }
+      return [notification];
+    });
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
 
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications(prev => {
+      if (Array.isArray(prev)) {
+        return prev.filter(n => n.id !== id);
+      }
+      return [];
+    });
   };
 
   // Sigma Event Handlers
@@ -509,7 +607,12 @@ const SigmaAIWorkbookBuilderPage = () => {
       timestamp: new Date().toISOString(),
       data: workbook
     };
-    setWorkbookEvents(prev => [event, ...prev.slice(0, 49)]);
+    setWorkbookEvents(prev => {
+      if (Array.isArray(prev)) {
+        return [event, ...prev.slice(0, 49)];
+      }
+      return [event];
+    });
   };
 
   const handleWorkbookError = (error) => {
@@ -525,7 +628,12 @@ const SigmaAIWorkbookBuilderPage = () => {
       timestamp: new Date().toISOString(),
       data: variable
     };
-    setWorkbookEvents(prev => [event, ...prev.slice(0, 49)]);
+    setWorkbookEvents(prev => {
+      if (Array.isArray(prev)) {
+        return [event, ...prev.slice(0, 49)];
+      }
+      return [event];
+    });
   };
 
   const handleActionOutbound = (action) => {
@@ -535,7 +643,12 @@ const SigmaAIWorkbookBuilderPage = () => {
       timestamp: new Date().toISOString(),
       data: action
     };
-    setWorkbookEvents(prev => [event, ...prev.slice(0, 49)]);
+    setWorkbookEvents(prev => {
+      if (Array.isArray(prev)) {
+        return [event, ...prev.slice(0, 49)];
+      }
+      return [event];
+    });
   };
 
   // AI Assistant Dialog
@@ -599,7 +712,7 @@ const SigmaAIWorkbookBuilderPage = () => {
           </Box>
         )}
 
-        {aiSuggestions.length > 0 && (
+        {aiSuggestions && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
           <Box>
             <Typography variant="h6" mb={2}>AI Suggestions</Typography>
             {aiSuggestions.map((suggestion, index) => (
@@ -621,7 +734,7 @@ const SigmaAIWorkbookBuilderPage = () => {
                   </Typography>
                   
                   <List dense>
-                    {suggestion.items.map((item, itemIndex) => (
+                    {suggestion.items && Array.isArray(suggestion.items) && suggestion.items.map((item, itemIndex) => (
                       <ListItem key={itemIndex} sx={{ py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 32 }}>
                           <CheckIcon fontSize="small" color="primary" />
@@ -665,7 +778,7 @@ const SigmaAIWorkbookBuilderPage = () => {
           </Box>
         )}
 
-        {aiHistory.length > 0 && (
+        {aiHistory && Array.isArray(aiHistory) && aiHistory.length > 0 && (
           <Box mt={3}>
             <Typography variant="h6" mb={2}>Recent Conversations</Typography>
             <List dense>
@@ -798,67 +911,93 @@ const SigmaAIWorkbookBuilderPage = () => {
   );
 
   // AI Components Overview
-  const renderAIComponents = () => (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" mb={3}>AI-Generated Components</Typography>
-        
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" mb={2}>Input Tables ({aiComponents.inputTables.length})</Typography>
-            {aiComponents.inputTables.map((table) => (
-              <Paper key={table.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2">{table.name}</Typography>
-                <Typography variant="body2" color="text.secondary">{table.description}</Typography>
-                <Box mt={1}>
-                  {table.columns.map((col, index) => (
-                    <Chip key={index} label={col.name} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
-                  ))}
-                </Box>
-              </Paper>
-            ))}
-          </Grid>
+  const renderAIComponents = () => {
+    // Safety check: ensure aiComponents is always defined with the correct structure
+    if (!aiComponents) {
+      console.warn('aiComponents is undefined, initializing with default structure');
+      setAiComponents({
+        inputTables: [],
+        layoutElements: [],
+        actions: [],
+        workflows: [],
+        visualizations: [],
+        filters: []
+      });
+      return null; // Return null while re-initializing
+    }
+
+    // Ensure all required properties exist with fallbacks to empty arrays
+    const safeComponents = {
+      inputTables: aiComponents.inputTables || [],
+      layoutElements: aiComponents.layoutElements || [],
+      actions: aiComponents.actions || [],
+      workflows: aiComponents.workflows || [],
+      visualizations: aiComponents.visualizations || [],
+      filters: aiComponents.filters || []
+    };
+
+    return (
+      <Card>
+        <CardContent>
+          <Typography variant="h6" mb={3}>AI-Generated Components</Typography>
           
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" mb={2}>Layout Elements ({aiComponents.layoutElements.length})</Typography>
-            {aiComponents.layoutElements.map((element) => (
-              <Paper key={element.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2">{element.name}</Typography>
-                <Typography variant="body2" color="text.secondary">{element.description}</Typography>
-                <Chip label={element.type} size="small" sx={{ mt: 1 }} />
-              </Paper>
-            ))}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" mb={2}>Input Tables ({safeComponents.inputTables.length})</Typography>
+              {safeComponents.inputTables.map((table) => (
+                <Paper key={table.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2">{table.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{table.description}</Typography>
+                  <Box mt={1}>
+                    {table.columns.map((col, index) => (
+                      <Chip key={index} label={col.name} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
+                    ))}
+                  </Box>
+                </Paper>
+              ))}
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" mb={2}>Layout Elements ({safeComponents.layoutElements.length})</Typography>
+              {safeComponents.layoutElements.map((element) => (
+                <Paper key={element.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2">{element.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{element.description}</Typography>
+                  <Chip label={element.type} size="small" sx={{ mt: 1 }} />
+                </Paper>
+              ))}
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" mb={2}>Workflows ({safeComponents.workflows.length})</Typography>
+              {safeComponents.workflows.map((workflow) => (
+                <Paper key={workflow.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2">{workflow.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{workflow.description}</Typography>
+                  <Box mt={1}>
+                    {workflow.steps.map((step) => (
+                      <Chip key={step.id} label={step.name} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
+                    ))}
+                  </Box>
+                </Paper>
+              ))}
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" mb={2}>Visualizations ({safeComponents.visualizations.length})</Typography>
+              {safeComponents.visualizations.map((viz) => (
+                <Paper key={viz.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2">{viz.title}</Typography>
+                  <Typography variant="body2" color="text.secondary">{viz.description}</Typography>
+                  <Chip label={viz.type} size="small" sx={{ mt: 1 }} />
+                </Paper>
+              ))}
+            </Grid>
           </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" mb={2}>Workflows ({aiComponents.workflows.length})</Typography>
-            {aiComponents.workflows.map((workflow) => (
-              <Paper key={workflow.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2">{workflow.name}</Typography>
-                <Typography variant="body2" color="text.secondary">{workflow.description}</Typography>
-                <Box mt={1}>
-                  {workflow.steps.map((step) => (
-                    <Chip key={step.id} label={step.name} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
-                  ))}
-                </Box>
-              </Paper>
-            ))}
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="subtitle1" mb={2}>Visualizations ({aiComponents.visualizations.length})</Typography>
-            {aiComponents.visualizations.map((viz) => (
-              <Paper key={viz.id} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2">{viz.title}</Typography>
-                <Typography variant="body2" color="text.secondary">{viz.description}</Typography>
-                <Chip label={viz.type} size="small" sx={{ mt: 1 }} />
-              </Paper>
-            ))}
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   // Sigma Workbook Preview
   const renderWorkbookPreview = () => (
@@ -906,56 +1045,75 @@ const SigmaAIWorkbookBuilderPage = () => {
 
   // Main Content Renderer
   const renderMainContent = () => {
-    switch (activeTab) {
-      case 0:
-        return (
-          <Box>
-            {renderWorkbookConfig()}
-            <Box mt={3}>
-              {renderAIComponents()}
+    try {
+      switch (activeTab) {
+        case 0:
+          return (
+            <Box>
+              {renderWorkbookConfig()}
+              <Box mt={3}>
+                {renderAIComponents()}
+              </Box>
             </Box>
-          </Box>
-        );
-      case 1:
-        return renderWorkbookPreview();
-      case 2:
-        return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" mb={3}>AI Assistant History</Typography>
-              {aiHistory.length > 0 ? (
-                <List>
-                  {aiHistory.map((item) => (
-                    <ListItem key={item.id} divider>
-                      <ListItemIcon>
-                        <ChatIcon color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={item.query}
-                        secondary={new Date(item.timestamp).toLocaleString()}
-                      />
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setAiQuery(item.query);
-                          setAiAssistantOpen(true);
-                        }}
-                      >
-                        Repeat
-                      </Button>
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
-                  No AI assistant history yet. Start a conversation to see your history here.
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        );
-      default:
-        return null;
+          );
+        case 1:
+          return renderWorkbookPreview();
+        case 2:
+          return (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" mb={3}>AI Assistant History</Typography>
+                {aiHistory && Array.isArray(aiHistory) && aiHistory.length > 0 ? (
+                  <List>
+                    {aiHistory.map((item) => (
+                      <ListItem key={item.id} divider>
+                        <ListItemIcon>
+                          <ChatIcon color="primary" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={item.query}
+                          secondary={new Date(item.timestamp).toLocaleString()}
+                        />
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            setAiQuery(item.query);
+                            setAiAssistantOpen(true);
+                          }}
+                        >
+                          Repeat
+                        </Button>
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
+                    No AI assistant history yet. Start a conversation to see your history here.
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          );
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error('Error in renderMainContent:', error);
+      return (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" color="error" gutterBottom>
+              Error Rendering Tab Content
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              An error occurred while rendering the tab content. Please try switching tabs or refresh the page.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+              Error: {error.message}
+            </Typography>
+          </CardContent>
+        </Card>
+      );
     }
   };
 
@@ -997,7 +1155,35 @@ const SigmaAIWorkbookBuilderPage = () => {
       </Box>
 
       {/* Main Content */}
-      {renderMainContent()}
+      {(() => {
+        try {
+          return renderMainContent();
+        } catch (error) {
+          console.error('Error rendering main content:', error);
+          return (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" color="error" gutterBottom>
+                  Error Rendering Content
+                </Typography>
+                <Typography variant="body2" color="text.secondary" mb={2}>
+                  An error occurred while rendering the page content. Please refresh the page or contact support.
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => window.location.reload()}
+                  startIcon={<RefreshIcon />}
+                >
+                  Refresh Page
+                </Button>
+                <Typography variant="body2" color="text.secondary" mt={2} sx={{ fontFamily: 'monospace' }}>
+                  Error: {error.message}
+                </Typography>
+              </CardContent>
+            </Card>
+          );
+        }
+      })()}
 
       {/* AI Assistant FAB */}
       <Zoom in={true}>
@@ -1016,7 +1202,7 @@ const SigmaAIWorkbookBuilderPage = () => {
 
       {/* Notifications */}
       <Box sx={{ position: 'fixed', top: 24, right: 24, zIndex: 9999 }}>
-        {notifications.slice(0, 3).map((notification) => (
+        {notifications && Array.isArray(notifications) && notifications.slice(0, 3).map((notification) => (
           <Alert
             key={notification.id}
             severity={notification.severity}
