@@ -5,6 +5,7 @@ import SigmaWorkbookManager from './SigmaWorkbookManager';
 import SigmaOAuthManager from './SigmaOAuthManager';
 import SigmaWorkspaceManager from './SigmaWorkspaceManager';
 import SigmaDatasetManager from './SigmaDatasetManager';
+import SigmaCredentialsManager from './SigmaCredentialsManager';
 import './SigmaAPIDashboard.css';
 
 const SigmaAPIDashboard = () => {
@@ -16,7 +17,7 @@ const SigmaAPIDashboard = () => {
     checkAPIStatus
   } = useSigmaAPI();
 
-  const [activeTab, setActiveTab] = useState('connections');
+  const [activeTab, setActiveTab] = useState('credentials');
 
   useEffect(() => {
     checkAPIStatus();
@@ -35,7 +36,7 @@ const SigmaAPIDashboard = () => {
     return (
       <div className="sigma-api-dashboard error">
         <h3>Sigma API Connection Error</h3>
-        <p>{error}</p>
+        <p>{error ? (typeof error === 'string' ? error : 'Unknown error occurred') : 'Connection failed'}</p>
         <button onClick={checkAPIStatus} className="retry-button">
           Retry Connection
         </button>
@@ -47,7 +48,7 @@ const SigmaAPIDashboard = () => {
     return (
       <div className="sigma-api-dashboard disabled">
         <h3>Sigma API Not Enabled</h3>
-        <p>{error}</p>
+        <p>{error ? (typeof error === 'string' ? error : 'API is disabled') : 'API is not enabled'}</p>
         <p>Please check your configuration and ensure the Sigma API is enabled.</p>
         <button onClick={checkAPIStatus} className="retry-button">
           Check Status
@@ -69,6 +70,7 @@ const SigmaAPIDashboard = () => {
   }
 
   const tabs = [
+    { id: 'credentials', label: 'Credentials', icon: '🔑' },
     { id: 'connections', label: 'Connections', icon: '🔌' },
     { id: 'workbooks', label: 'Workbooks', icon: '📊' },
     { id: 'workspaces', label: 'Workspaces', icon: '🏢' },
@@ -103,6 +105,7 @@ const SigmaAPIDashboard = () => {
       </div>
 
       <div className="dashboard-content">
+        {activeTab === 'credentials' && <SigmaCredentialsManager />}
         {activeTab === 'connections' && <SigmaConnectionManager />}
         {activeTab === 'workbooks' && <SigmaWorkbookManager />}
         {activeTab === 'workspaces' && <SigmaWorkspaceManager />}

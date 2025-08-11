@@ -1,4 +1,6 @@
 // src/services/api.js
+import axios from 'axios';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5555/api';
 
 class ApiError extends Error {
@@ -13,110 +15,94 @@ class ApiError extends Error {
 class ApiClient {
   constructor(baseURL = API_BASE_URL) {
     this.baseURL = baseURL;
+    this.axiosInstance = axios.create({
+      baseURL: this.baseURL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000, // 30 second timeout
+    });
+
+    // Add request interceptor for logging
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`, config);
+        return config;
+      },
+      (error) => {
+        console.error('API Request Error:', error);
+        return Promise.reject(error);
+      }
+    );
+
+    // Add response interceptor for logging
+    this.axiosInstance.interceptors.response.use(
+      (response) => {
+        console.log(`API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+        return response;
+      },
+      (error) => {
+        console.error(`API Response Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error);
+        return Promise.reject(error);
+      }
+    );
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    console.log(`API Request: ${url}`, config);
-
-    // Check if fetch is available
-    if (typeof fetch === 'undefined') {
-      console.error('Fetch API is not available in this environment');
-      throw new ApiError(
-        'Fetch API not available in this environment. Please check browser compatibility or polyfill.',
-        0,
-        {}
-      );
-    }
-
     try {
-      const response = await fetch(url, config);
-      
-      // Parse the response body first
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        // If response is not JSON, treat as text
-        data = await response.text();
-      }
-      
-      // Check if response is ok (2xx status)
-      if (!response.ok) {
-        // For 404 responses, check if they contain valid error messages
-        if (response.status === 404 && data && typeof data === 'object' && data.message) {
-          // This is a valid 404 response with an error message, return it as data
-          console.log(`API Response (404 with message): ${url}`, data);
-          return data;
-        }
-        
-        // For other error statuses, throw an error
-        throw new ApiError(
-          `HTTP error! status: ${response.status}`,
-          response.status,
-          data
-        );
-      }
+      const config = {
+        url: endpoint,
+        method: options.method || 'GET',
+        data: options.body ? JSON.parse(options.body) : undefined,
+        headers: options.headers,
+        ...options,
+      };
 
-      console.log(`API Response: ${url}`, data);
-      return data;
+      const response = await this.axiosInstance.request(config);
+      return response.data;
     } catch (error) {
-      console.error(`API Error: ${url}`, error);
+      console.error(`API Error: ${endpoint}`, error);
       
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      // Check if it's a network error
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error.response) {
+        // Server responded with error status
         throw new ApiError(
-          `Network error: Fetch API not available - ${error.message}`,
+          `HTTP error! status: ${error.response.status}`,
+          error.response.status,
+          error.response.data
+        );
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new ApiError(
+          'Network error: No response received from server',
+          0,
+          {}
+        );
+      } else {
+        // Something else happened
+        throw new ApiError(
+          `Network error: ${error.message}`,
           0,
           {}
         );
       }
-      
-      // Check if it's a CORS error
-      if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
-        throw new ApiError(
-          `CORS error: ${error.message}`,
-          0,
-          {}
-        );
-      }
-      
-      throw new ApiError(
-        `Network error: ${error.message}`,
-        0,
-        {}
-      );
     }
   }
 
-  // Generic methods
   async get(endpoint) {
     return this.request(endpoint, { method: 'GET' });
   }
 
   async post(endpoint, data) {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
+    return this.request(endpoint, { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
     });
   }
 
   async put(endpoint, data) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
+    return this.request(endpoint, { 
+      method: 'PUT', 
+      body: JSON.stringify(data) 
     });
   }
 
@@ -159,7 +145,21 @@ class ApiClient {
   }
 
   async getSigmaConfig() {
-    return this.get('/sigma/config');
+    return this.request('/sigma/config');
+  }
+
+  async updateSigmaCredentials(credentialsData) {
+    return this.request('/sigma/credentials', {
+      method: 'PUT',
+      body: JSON.stringify(credentialsData)
+    });
+  }
+
+  async testSigmaCredentials(credentialsData) {
+    return this.request('/sigma/test-credentials', {
+      method: 'POST',
+      body: JSON.stringify(credentialsData)
+    });
   }
 
   // Analytics endpoints
@@ -224,87 +224,69 @@ class ApiClient {
   }
 
   async listDataApps() {
-    return this.get('/data-app-templates');
+    return this.get('/data-apps');
   }
 
   // Sigma AI methods
   async getSigmaAISuggestions(query, context = {}) {
-    return this.post('/sigma-ai/suggestions', { query, context });
+    return this.post('/sigma/ai/suggestions', { query, context });
   }
 
   async getSigmaAITemplates() {
-    return this.get('/sigma-ai/templates');
+    return this.get('/sigma/ai/templates');
   }
 
   async getSigmaAITemplate(templateName) {
-    return this.get(`/sigma-ai/templates/${templateName}`);
+    return this.get(`/sigma/ai/templates/${templateName}`);
   }
 
   async generateSigmaAIConfig(requirements, templateName = null) {
-    const data = { requirements };
-    if (templateName) {
-      data.template_name = templateName;
-    }
-    return this.post('/sigma-ai/generate-config', data);
+    return this.post('/sigma/ai/generate-config', { requirements, templateName });
   }
 
   async analyzeSigmaAIRequirements(requirements) {
-    return this.post('/sigma-ai/analyze-requirements', { requirements });
+    return this.post('/sigma/ai/analyze-requirements', { requirements });
   }
 
   async optimizeSigmaAIWorkbook(workbookConfig, optimizationFocus = 'performance') {
-    return this.post('/sigma-ai/optimize-workbook', { 
-      workbook_config: workbookConfig, 
-      optimization_focus: optimizationFocus 
-    });
+    return this.post('/sigma/ai/optimize-workbook', { workbookConfig, optimizationFocus });
   }
 
   async checkSigmaAIHealth() {
-    return this.get('/sigma-ai/health');
+    return this.get('/sigma/ai/health');
   }
 
   // Sigma API Methods
-  async getSigmaAPIStatus() {
-    return this.request('/api/sigma/status');
-  }
-
   async getSigmaConnections(page = 1, size = 50) {
-    return this.request(`/api/sigma/connections?page=${page}&size=${size}`);
+    return this.get(`/sigma/connections?page=${page}&size=${size}`);
   }
 
   async getSigmaWorkbooks(page = 1, size = 50) {
-    return this.request(`/api/sigma/workbooks?page=${page}&size=${size}`);
+    return this.get(`/sigma/workbooks?page=${page}&size=${size}`);
   }
 
   async getSigmaWorkbook(workbookId) {
-    return this.request(`/api/sigma/workbooks/${workbookId}`);
+    return this.get(`/sigma/workbooks/${workbookId}`);
   }
 
   async exportSigmaWorkbook(workbookId, exportData) {
-    return this.request(`/api/sigma/workbooks/${workbookId}/export`, {
-      method: 'POST',
-      body: JSON.stringify(exportData)
-    });
+    return this.post(`/sigma/workbooks/${workbookId}/export`, exportData);
   }
 
   async getSigmaWorkspaces(page = 1, size = 50) {
-    return this.request(`/api/sigma/workspaces?page=${page}&size=${size}`);
+    return this.get(`/sigma/workspaces?page=${page}&size=${size}`);
   }
 
   async getSigmaDatasets(page = 1, size = 50) {
-    return this.request(`/api/sigma/datasets?page=${page}&size=${size}`);
+    return this.get(`/sigma/datasets?page=${page}&size=${size}`);
   }
 
   async getSigmaTeams(page = 1, size = 50) {
-    return this.request(`/api/sigma/teams?page=${page}&size=${size}`);
+    return this.get(`/sigma/teams?page=${page}&size=${size}`);
   }
 
   async getSigmaMembers(page = 1, size = 50) {
-    return this.request(`/api/sigma/members?page=${page}&size=${size}`);
-  }
-
-  async getSigmaConfig() {
-    return this.request('/api/sigma/config');
+    return this.get(`/sigma/members?page=${page}&size=${size}`);
   }
 }
 
@@ -321,10 +303,10 @@ export const fetchUserSegments = () => apiClient.getUserSegments();
 
 // Additional exports for components
 export const fetchAIInsights = {
-  getStrategicAnalysis: () => apiClient.get('/ai-insights/strategic-analysis'),
-  getABTestingAnalysis: () => apiClient.get('/ai-insights/ab-testing'),
-  getMarketingInsights: () => apiClient.get('/ai-insights/marketing'),
-  getPredictiveInsights: () => apiClient.get('/ai-insights/predictive'),
+  getStrategicAnalysis: () => apiClient.get('/api/ai-insights/strategic-analysis'),
+  getABTestingAnalysis: () => apiClient.get('/api/ai-insights/ab-testing'),
+  getMarketingInsights: () => apiClient.get('/api/ai-insights/marketing'),
+  getPredictiveInsights: () => apiClient.get('/api/ai-insights/predictive'),
 };
 
 export const fetchUserJourneyData = () => apiClient.getUserJourney();

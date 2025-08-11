@@ -241,19 +241,144 @@ def get_sigma_config():
             }
             base_url = sigma_urls.get(cloud_provider, 'https://aws-api.sigmacomputing.com')
         
-        # TEMPORARY: Force enable for testing
-        enabled = True  # Force enable for testing
-        client_id_configured = True  # Force true for testing
-        client_secret_configured = True  # Force true for testing
+        # Get current configuration
+        enabled = current_app.config.get('SIGMA_API_ENABLED', False)
+        client_id = current_app.config.get('SIGMA_API_CLIENT_ID')
+        client_secret = current_app.config.get('SIGMA_API_CLIENT_SECRET')
         cloud_provider = current_app.config.get('SIGMA_API_CLOUD_PROVIDER', 'AWS-US (West)')
         
         return jsonify({
             'enabled': enabled,
             'cloud_provider': cloud_provider,
             'base_url': base_url,
-            'client_id_configured': client_id_configured,
-            'client_secret_configured': client_secret_configured
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'client_id_configured': bool(client_id),
+            'client_secret_configured': bool(client_secret)
         })
     except Exception as e:
         logger.error(f"Failed to get Sigma config: {e}")
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+@sigma_api.route('/api/sigma/credentials', methods=['PUT'])
+def update_sigma_credentials():
+    """Update Sigma API credentials dynamically"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate required fields
+        required_fields = ['client_id', 'client_secret', 'cloud_provider']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Update Flask app configuration
+        current_app.config['SIGMA_API_CLIENT_ID'] = data['client_id']
+        current_app.config['SIGMA_API_CLIENT_SECRET'] = data['client_secret']
+        current_app.config['SIGMA_API_CLOUD_PROVIDER'] = data['cloud_provider']
+        current_app.config['SIGMA_API_ENABLED'] = data.get('enabled', True)
+        
+        # Update base URL if provided or calculate from cloud provider
+        if data.get('base_url'):
+            current_app.config['SIGMA_API_BASE_URL'] = data['base_url']
+        else:
+            # Calculate base URL from cloud provider
+            cloud_provider = data['cloud_provider']
+            sigma_urls = {
+                'AWS-US (West)': 'https://aws-api.sigmacomputing.com',
+                'AWS-US (East)': 'https://api.us-a.aws.sigmacomputing.com',
+                'AWS-CA': 'https://api.ca.aws.sigmacomputing.com',
+                'AWS-EU': 'https://api.eu.aws.sigmacomputing.com',
+                'AWS-UK': 'https://api.uk.aws.sigmacomputing.com',
+                'AWS-AU': 'https://api.au.aws.sigmacomputing.com',
+                'Azure-US': 'https://api.us.azure.sigmacomputing.com',
+                'Azure-EU': 'https://api.eu.azure.sigmacomputing.com',
+                'Azure-CA': 'https://api.ca.azure.sigmacomputing.com',
+                'Azure-UK': 'https://api.uk.azure.sigmacomputing.com',
+                'GCP': 'https://api.sigmacomputing.com'
+            }
+            current_app.config['SIGMA_API_BASE_URL'] = sigma_urls.get(cloud_provider, 'https://aws-api.sigmacomputing.com')
+        
+        logger.info(f"Sigma API credentials updated successfully")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Credentials updated successfully',
+            'config': {
+                'enabled': current_app.config['SIGMA_API_ENABLED'],
+                'cloud_provider': current_app.config['SIGMA_API_CLOUD_PROVIDER'],
+                'base_url': current_app.config['SIGMA_API_BASE_URL'],
+                'client_id_configured': True,
+                'client_secret_configured': True
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to update Sigma credentials: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@sigma_api.route('/api/sigma/test-credentials', methods=['POST'])
+def test_sigma_credentials():
+    """Test Sigma API credentials without updating configuration"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate required fields
+        required_fields = ['client_id', 'client_secret', 'cloud_provider']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Calculate base URL
+        base_url = data.get('base_url')
+        if not base_url:
+            cloud_provider = data['cloud_provider']
+            sigma_urls = {
+                'AWS-US (West)': 'https://aws-api.sigmacomputing.com',
+                'AWS-US (East)': 'https://api.us-a.aws.sigmacomputing.com',
+                'AWS-CA': 'https://api.ca.aws.sigmacomputing.com',
+                'AWS-EU': 'https://api.eu.aws.sigmacomputing.com',
+                'AWS-UK': 'https://api.uk.aws.sigmacomputing.com',
+                'AWS-AU': 'https://api.au.aws.sigmacomputing.com',
+                'Azure-US': 'https://api.us.azure.sigmacomputing.com',
+                'Azure-EU': 'https://api.eu.azure.sigmacomputing.com',
+                'Azure-CA': 'https://api.ca.azure.sigmacomputing.com',
+                'Azure-UK': 'https://api.uk.azure.sigmacomputing.com',
+                'GCP': 'https://api.sigmacomputing.com'
+            }
+            base_url = sigma_urls.get(cloud_provider, 'https://aws-api.sigmacomputing.com')
+        
+        # Create temporary credentials for testing
+        from services.sigma_api_client import SigmaCredentials, SigmaAPIClient
+        
+        test_credentials = SigmaCredentials(
+            client_id=data['client_id'],
+            client_secret=data['client_secret'],
+            base_url=base_url,
+            cloud_provider=data['cloud_provider']
+        )
+        
+        # Test the connection
+        test_client = SigmaAPIClient(test_credentials)
+        user_info = test_client.get_current_user()
+        
+        logger.info(f"Sigma API credentials test successful for user: {user_info.get('email', 'Unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Credentials test successful',
+            'user': user_info,
+            'base_url': base_url,
+            'cloud_provider': data['cloud_provider']
+        })
+        
+    except Exception as e:
+        logger.error(f"Sigma API credentials test failed: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400 

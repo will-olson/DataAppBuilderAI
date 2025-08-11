@@ -8,6 +8,9 @@ const initialState = {
   apiStatus: 'disconnected',
   connectionInfo: null,
   
+  // Credentials management
+  credentials: null,
+  
   // Data collections
   connections: [],
   workbooks: [],
@@ -42,6 +45,9 @@ const sigmaAPIReducer = (state, action) => {
     
     case 'SET_CONNECTION_INFO':
       return { ...state, connectionInfo: action.payload };
+    
+    case 'SET_CREDENTIALS':
+      return { ...state, credentials: action.payload };
     
     case 'SET_CONNECTIONS':
       return { ...state, connections: action.payload };
@@ -96,7 +102,7 @@ export const SigmaAPIProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
       
-      const status = await apiClient.getSigmaAPIStatus();
+      const status = await apiClient.getSigmaStatus();
       
       if (status.status === 'connected') {
         dispatch({ type: 'SET_API_STATUS', payload: 'connected' });
@@ -111,6 +117,58 @@ export const SigmaAPIProvider = ({ children }) => {
     } catch (error) {
       dispatch({ type: 'SET_API_STATUS', payload: 'error' });
       dispatch({ type: 'SET_ERROR', payload: error.message });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, []);
+
+  // Get current credentials configuration
+  const fetchCredentials = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const config = await apiClient.getSigmaConfig();
+      dispatch({ type: 'SET_CREDENTIALS', payload: config });
+      
+      return config;
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, []);
+
+  // Update credentials
+  const updateCredentials = useCallback(async (credentialsData) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const result = await apiClient.updateSigmaCredentials(credentialsData);
+      
+      // Refresh credentials after update
+      await fetchCredentials();
+      
+      return result;
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [fetchCredentials]);
+
+  // Test credentials
+  const testCredentials = useCallback(async (credentialsData) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const result = await apiClient.testSigmaCredentials(credentialsData);
+      
+      return result;
+    } catch (error) {
+      dispatch({ type: 'SET_ERROR', payload: error.message });
+      throw error;
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -243,11 +301,15 @@ export const SigmaAPIProvider = ({ children }) => {
   // Initialize API connection on mount
   useEffect(() => {
     checkAPIStatus();
-  }, [checkAPIStatus]);
+    fetchCredentials();
+  }, [checkAPIStatus, fetchCredentials]);
 
   const value = {
     ...state,
     checkAPIStatus,
+    fetchCredentials,
+    updateCredentials,
+    testCredentials,
     fetchConnections,
     fetchWorkbooks,
     fetchWorkspaces,
