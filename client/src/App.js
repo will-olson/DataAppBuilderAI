@@ -41,7 +41,11 @@ import {
   Bolt as ActionIcon,
   Assessment as AssessmentIcon,
   Code as CodeIcon,
-  Build as BuildIcon
+  Build as BuildIcon,
+  IntegrationInstructions as IntegrationInstructionsIcon,
+  PlayArrow as PlayArrowIcon,
+  TableChart as TableChartIcon,
+  BugReport as BugReportIcon
 } from '@mui/icons-material';
 
 // Import existing pages
@@ -63,6 +67,7 @@ import LayoutElementsPage from './components/pages/LayoutElementsPage';
 import ActionsPage from './components/pages/ActionsPage';
 import SigmaPlaygroundPage from './components/pages/SigmaPlaygroundPage';
 import SigmaDataAppsBuilderPage from './components/pages/SigmaDataAppsBuilderPage';
+import SigmaSDKTestingPage from './components/pages/SigmaSDKTestingPage';
 
 // Import ErrorBoundary
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -230,6 +235,12 @@ function App() {
       icon: <ActionIcon />,
       path: '/sigma/actions',
       page: ActionsPage
+    },
+    {
+      text: 'SDK Testing',
+      icon: <BugReportIcon />,
+      path: '/sigma/sdk-testing',
+      page: SigmaSDKTestingPage
     }
   ];
 
@@ -433,6 +444,7 @@ function App() {
                   <Route path="/sigma/input-tables" element={<InputTablesPage />} />
                   <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
                   <Route path="/sigma/actions" element={<ActionsPage />} />
+                  <Route path="/sigma/sdk-testing" element={<SigmaSDKTestingPage />} />
                   
                   {/* Catch all route */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
