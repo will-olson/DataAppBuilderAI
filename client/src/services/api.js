@@ -224,7 +224,43 @@ class ApiClient {
   }
 
   async listDataApps() {
-    return this.get('/data-apps');
+    return this.get('/data-app-templates');
+  }
+
+  // Sigma AI methods
+  async getSigmaAISuggestions(query, context = {}) {
+    return this.post('/sigma-ai/suggestions', { query, context });
+  }
+
+  async getSigmaAITemplates() {
+    return this.get('/sigma-ai/templates');
+  }
+
+  async getSigmaAITemplate(templateName) {
+    return this.get(`/sigma-ai/templates/${templateName}`);
+  }
+
+  async generateSigmaAIConfig(requirements, templateName = null) {
+    const data = { requirements };
+    if (templateName) {
+      data.template_name = templateName;
+    }
+    return this.post('/sigma-ai/generate-config', data);
+  }
+
+  async analyzeSigmaAIRequirements(requirements) {
+    return this.post('/sigma-ai/analyze-requirements', { requirements });
+  }
+
+  async optimizeSigmaAIWorkbook(workbookConfig, optimizationFocus = 'performance') {
+    return this.post('/sigma-ai/optimize-workbook', { 
+      workbook_config: workbookConfig, 
+      optimization_focus: optimizationFocus 
+    });
+  }
+
+  async checkSigmaAIHealth() {
+    return this.get('/sigma-ai/health');
   }
 }
 

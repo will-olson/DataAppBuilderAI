@@ -3,6 +3,7 @@ sqlalchemy
 flask
 flask-sqlalchemy
 flask-migrate
+flask-login
 faker
 pandas
 numpy

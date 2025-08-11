@@ -67,6 +67,7 @@ import LayoutElementsPage from './components/pages/LayoutElementsPage';
 import ActionsPage from './components/pages/ActionsPage';
 import SigmaPlaygroundPage from './components/pages/SigmaPlaygroundPage';
 import SigmaDataAppsBuilderPage from './components/pages/SigmaDataAppsBuilderPage';
+import SigmaAIWorkbookBuilderPage from './components/pages/SigmaAIWorkbookBuilderPage';
 import SigmaSDKTestingPage from './components/pages/SigmaSDKTestingPage';
 
 // Import ErrorBoundary
@@ -217,6 +218,12 @@ function App() {
       icon: <BuildIcon />,
       path: '/sigma/data-apps-builder',
       page: SigmaDataAppsBuilderPage
+    },
+    {
+      text: 'AI Workbook Builder',
+      icon: <IntegrationInstructionsIcon />,
+      path: '/sigma/ai-workbook-builder',
+      page: SigmaAIWorkbookBuilderPage
     },
     {
       text: 'Input Tables',
@@ -441,6 +448,7 @@ function App() {
                   <Route path="/sigma/status" element={<SigmaStatusPage />} />
                   <Route path="/sigma/playground" element={<SigmaPlaygroundPage />} />
                   <Route path="/sigma/data-apps-builder" element={<SigmaDataAppsBuilderPage />} />
+                  <Route path="/sigma/ai-workbook-builder" element={<SigmaAIWorkbookBuilderPage />} />
                   <Route path="/sigma/input-tables" element={<InputTablesPage />} />
                   <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
                   <Route path="/sigma/actions" element={<ActionsPage />} />

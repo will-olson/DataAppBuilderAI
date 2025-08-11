@@ -743,4 +743,13 @@ def create_app(config_class=None):
         if rule.endpoint != 'static':
             logger.info(f"{rule.endpoint}: {rule.rule}")
 
+    # Register Sigma AI blueprint
+    try:
+        from app.routes.sigma_ai import sigma_ai_bp, init_app as init_sigma_ai
+        init_sigma_ai(app)
+        logger.info("Sigma AI routes registered successfully")
+    except Exception as e:
+        logger.warning(f"Sigma AI routes registration failed: {e}")
+        logger.info("Continuing without Sigma AI functionality")
+
     return app
