@@ -69,6 +69,7 @@ import SigmaPlaygroundPage from './components/pages/SigmaPlaygroundPage';
 import SigmaDataAppsBuilderPage from './components/pages/SigmaDataAppsBuilderPage';
 import SigmaAIWorkbookBuilderPage from './components/pages/SigmaAIWorkbookBuilderPage';
 import SigmaSDKTestingPage from './components/pages/SigmaSDKTestingPage';
+import SigmaAPIDemo from './pages/SigmaAPIDemo';
 
 // Import ErrorBoundary
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -248,6 +249,12 @@ function App() {
       icon: <BugReportIcon />,
       path: '/sigma/sdk-testing',
       page: SigmaSDKTestingPage
+    },
+    {
+      text: 'API Dashboard',
+      icon: <IntegrationInstructionsIcon />,
+      path: '/sigma/api-demo',
+      page: SigmaAPIDemo
     }
   ];
 
@@ -453,6 +460,7 @@ function App() {
                   <Route path="/sigma/layout-elements" element={<LayoutElementsPage />} />
                   <Route path="/sigma/actions" element={<ActionsPage />} />
                   <Route path="/sigma/sdk-testing" element={<SigmaSDKTestingPage />} />
+                  <Route path="/sigma/api-demo" element={<SigmaAPIDemo />} />
                   
                   {/* Catch all route */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />

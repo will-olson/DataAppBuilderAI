@@ -1,0 +1,100 @@
+.sigma-api-demo-page {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.demo-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.demo-header h1 {
+  margin: 0 0 15px 0;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.demo-header p {
+  margin: 0;
+  font-size: 18px;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.demo-footer {
+  background-color: white;
+  padding: 40px 20px;
+  margin-top: 40px;
+  border-top: 1px solid #e1e5e9;
+}
+
+.demo-footer h3 {
+  margin: 0 0 25px 0;
+  color: #2c3e50;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.config-steps {
+  max-width: 800px;
+  margin: 0 auto;
+  display: grid;
+  gap: 30px;
+}
+
+.config-step {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 25px;
+}
+
+.config-step h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.config-step p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.config-step pre {
+  background-color: #2d3748;
+  color: #e2e8f0;
+  padding: 15px;
+  border-radius: 6px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: auto;
+  margin: 15px 0 0 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .demo-header h1 {
+    font-size: 28px;
+  }
+  
+  .demo-header p {
+    font-size: 16px;
+  }
+  
+  .config-steps {
+    gap: 20px;
+  }
+  
+  .config-step {
+    padding: 20px;
+  }
+} 

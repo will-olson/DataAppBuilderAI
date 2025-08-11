@@ -262,6 +262,50 @@ class ApiClient {
   async checkSigmaAIHealth() {
     return this.get('/sigma-ai/health');
   }
+
+  // Sigma API Methods
+  async getSigmaAPIStatus() {
+    return this.request('/api/sigma/status');
+  }
+
+  async getSigmaConnections(page = 1, size = 50) {
+    return this.request(`/api/sigma/connections?page=${page}&size=${size}`);
+  }
+
+  async getSigmaWorkbooks(page = 1, size = 50) {
+    return this.request(`/api/sigma/workbooks?page=${page}&size=${size}`);
+  }
+
+  async getSigmaWorkbook(workbookId) {
+    return this.request(`/api/sigma/workbooks/${workbookId}`);
+  }
+
+  async exportSigmaWorkbook(workbookId, exportData) {
+    return this.request(`/api/sigma/workbooks/${workbookId}/export`, {
+      method: 'POST',
+      body: JSON.stringify(exportData)
+    });
+  }
+
+  async getSigmaWorkspaces(page = 1, size = 50) {
+    return this.request(`/api/sigma/workspaces?page=${page}&size=${size}`);
+  }
+
+  async getSigmaDatasets(page = 1, size = 50) {
+    return this.request(`/api/sigma/datasets?page=${page}&size=${size}`);
+  }
+
+  async getSigmaTeams(page = 1, size = 50) {
+    return this.request(`/api/sigma/teams?page=${page}&size=${size}`);
+  }
+
+  async getSigmaMembers(page = 1, size = 50) {
+    return this.request(`/api/sigma/members?page=${page}&size=${size}`);
+  }
+
+  async getSigmaConfig() {
+    return this.request('/api/sigma/config');
+  }
 }
 
 // Create and export a singleton instance

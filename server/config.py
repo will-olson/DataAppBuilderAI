@@ -20,6 +20,28 @@ class Config:
         'real_time_sync': False
     }
     
+    # Sigma API Configuration
+    SIGMA_API_ENABLED = os.environ.get('SIGMA_API_ENABLED', 'false').lower() == 'true'
+    SIGMA_API_CLIENT_ID = os.environ.get('SIGMA_API_CLIENT_ID')
+    SIGMA_API_CLIENT_SECRET = os.environ.get('SIGMA_API_CLIENT_SECRET')
+    SIGMA_API_BASE_URL = os.environ.get('SIGMA_API_BASE_URL')
+    SIGMA_API_CLOUD_PROVIDER = os.environ.get('SIGMA_API_CLOUD_PROVIDER', 'AWS-US (West)')
+    
+    # Sigma API Cloud Provider Mapping
+    SIGMA_API_URLS = {
+        'AWS-US (West)': 'https://aws-api.sigmacomputing.com',
+        'AWS-US (East)': 'https://api.us-a.aws.sigmacomputing.com',
+        'AWS-CA': 'https://api.ca.aws.sigmacomputing.com',
+        'AWS-EU': 'https://api.eu.aws.sigmacomputing.com',
+        'AWS-UK': 'https://api.uk.aws.sigmacomputing.com',
+        'AWS-AU': 'https://api.au.aws.sigmacomputing.com',
+        'Azure-US': 'https://api.us.azure.sigmacomputing.com',
+        'Azure-EU': 'https://api.eu.azure.sigmacomputing.com',
+        'Azure-CA': 'https://api.ca.azure.sigmacomputing.com',
+        'Azure-UK': 'https://api.uk.azure.sigmacomputing.com',
+        'GCP': 'https://api.sigmacomputing.com'
+    }
+    
     # Database Configuration
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     
@@ -42,6 +64,13 @@ class Config:
         'database': os.environ.get('SNOWFLAKE_DATABASE'),
         'schema': os.environ.get('SNOWFLAKE_SCHEMA')
     }
+    
+    @property
+    def sigma_api_base_url(self):
+        """Get Sigma API base URL based on cloud provider"""
+        if self.SIGMA_API_BASE_URL:
+            return self.SIGMA_API_BASE_URL
+        return self.SIGMA_API_URLS.get(self.SIGMA_API_CLOUD_PROVIDER)
 
 class DevelopmentConfig(Config):
     """Development configuration"""

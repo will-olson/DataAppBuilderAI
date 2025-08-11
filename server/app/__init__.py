@@ -10,6 +10,11 @@ from sqlalchemy import text
 import logging
 from config import get_config, update_sigma_mode
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -35,6 +40,14 @@ def create_app(config_class=None):
     # Setup logging
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
+    
+    # Register Sigma API routes
+    try:
+        from routes.sigma_api import sigma_api
+        app.register_blueprint(sigma_api)
+        logger.info("Sigma API routes registered successfully")
+    except Exception as e:
+        logger.warning(f"Failed to register Sigma API routes: {e}")
     
     # Initialize Sigma Framework if enabled
     sigma_integration = None
